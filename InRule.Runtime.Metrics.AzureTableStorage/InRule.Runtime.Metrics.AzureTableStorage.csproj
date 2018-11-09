@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>InRule.Runtime.Metrics.AzureTableStorage</AssemblyName>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>KeyPair.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
+    <PackageReference Include="WindowsAzure.Storage" Version="9.3.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="InRule.Runtime">
+      <HintPath>..\..\Flagship\Bin\net4.6.1\InRule.Runtime.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

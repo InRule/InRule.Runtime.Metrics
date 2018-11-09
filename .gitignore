@@ -1,0 +1,8 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/InRule.Runtime.Metrics.AzureTableStorage/.vs/InRule.Runtime.Metrics.AzureTableStorage/v15/Server/sqlite3
+/.vs/InRule.Runtime.Metrics/v15/Server/sqlite3
+/InRule.Runtime.Metrics.AzureTableStorage/bin/Debug/netstandard2.0
+/InRule.Runtime.Metrics.AzureTableStorage/obj
