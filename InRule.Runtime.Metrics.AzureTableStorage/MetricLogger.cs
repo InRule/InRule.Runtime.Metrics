@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
@@ -8,6 +9,9 @@ namespace InRule.Runtime.Metrics.AzureTableStorage
 {
 	public sealed class MetricLogger : IMetricLogger
 	{
+		private const string AzureStorageConnectionStringKeyName = "inrule:runtime:metrics:azureTableStorage:connectionString";
+		private const string AzureStorageTableName = "inrule:runtime:metrics:azureTableStorage:tableName";
+
 		private readonly CloudTable _table;
 		private string _serviceId;
 		private string _ruleApplicationName;
@@ -15,9 +19,9 @@ namespace InRule.Runtime.Metrics.AzureTableStorage
 
 		public MetricLogger()
 		{
-			CloudStorageAccount account = CloudStorageAccount.Parse(Config.Instance.StorageConnectionString);
+			CloudStorageAccount account = CloudStorageAccount.Parse(ConfigurationManager.AppSettings[AzureStorageConnectionStringKeyName]);
 			CloudTableClient tableClient = account.CreateCloudTableClient();
-			_table = tableClient.GetTableReference(Config.Instance.TableName);
+			_table = tableClient.GetTableReference(ConfigurationManager.AppSettings[AzureStorageTableName]);
 		}
 
 		public Task Start(string serviceId, string ruleApplicationName, Guid sessionId)

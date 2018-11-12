@@ -6,3 +6,9 @@
 /.vs/InRule.Runtime.Metrics/v15/Server/sqlite3
 /InRule.Runtime.Metrics.AzureTableStorage/bin/Debug/netstandard2.0
 /InRule.Runtime.Metrics.AzureTableStorage/obj
+/.vs/InRule.Runtime.Metrics/DesignTimeBuild
+*.suo
+/InRule.Runtime.Metrics.AzureTableStorage/bin/Release/netstandard2.0/ky-KG
+/InRule.Runtime.Metrics.AzureTableStorage/Properties/PublishProfiles
+/InRule.Runtime.Metrics.AzureTableStorage/bin/Release/netstandard2.0
+/InRule.Runtime.Metrics.AzureTableStorage/InRule.Runtime.Metrics.AzureTableStorage.csproj.user
