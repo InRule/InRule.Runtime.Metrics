@@ -32,16 +32,16 @@ namespace InRule.Runtime.Metrics.AzureTableStorage
 			return Task.CompletedTask;
 		}
 
-		public Task LogMetric(string entityId, string entityName, string kpiJson)
+		public Task LogMetric(Metric metric)
 		{
-			return _table.ExecuteAsync(TableOperation.Insert(new MetricEntity(_serviceId, _ruleApplicationName, _sessionId, entityId.Replace('/', '_'), entityName, kpiJson)));
+			return _table.ExecuteAsync(TableOperation.Insert(new MetricEntity(_serviceId, _ruleApplicationName, _sessionId, metric.EntityId.Replace('/', '_'), metric.EntityName, metric.MetricJson)));
 		}
 
-		public async Task LogMetricBatch(IEnumerable<Runtime.MetricEntity> kpiEntities)
+		public async Task LogMetricBatch(IEnumerable<Metric> metrics)
 		{
-			foreach (var kpi in kpiEntities)
+			foreach (var metric in metrics)
 			{
-				await _table.ExecuteAsync(TableOperation.Insert(new MetricEntity(_serviceId, _ruleApplicationName, _sessionId, kpi.EntityId.Replace('/', '_'), kpi.EntityName, kpi.MetricJson)));
+				await _table.ExecuteAsync(TableOperation.Insert(new MetricEntity(_serviceId, _ruleApplicationName, _sessionId, metric.EntityId.Replace('/', '_'), metric.EntityName, metric.MetricJson)));
 			}
 		}
 
