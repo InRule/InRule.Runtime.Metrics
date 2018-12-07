@@ -39,10 +39,13 @@ namespace InRule.Runtime.Metrics.AzureTableStorage
 
 		public async Task LogMetricBatch(IEnumerable<Metric> metrics)
 		{
-			foreach (var metric in metrics)
+			var batch = new TableBatchOperation();
+			foreach (Metric metric in metrics)
 			{
-				await _table.ExecuteAsync(TableOperation.Insert(new MetricEntity(_serviceId, _ruleApplicationName, _sessionId, metric.EntityId.Replace('/', '_'), metric.EntityName, metric.MetricJson)));
+				batch.Add(TableOperation.Insert(new MetricEntity(_serviceId, _ruleApplicationName, _sessionId, metric.EntityId.Replace('/', '_'), metric.EntityName, metric.MetricJson)));
 			}
+
+			await _table.ExecuteBatchAsync(batch);
 		}
 
 		public Task End()
