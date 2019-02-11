@@ -13,9 +13,6 @@ namespace InRule.Runtime.Metrics.AzureTableStorage
 		private const string AzureStorageTableName = "inrule:runtime:metrics:azureTableStorage:tableName";
 
 		private readonly CloudTable _table;
-		private string _serviceId;
-		private string _ruleApplicationName;
-		private string _sessionId;
 
 		public MetricLogger()
 		{
@@ -24,33 +21,15 @@ namespace InRule.Runtime.Metrics.AzureTableStorage
 			_table = tableClient.GetTableReference(ConfigurationManager.AppSettings[AzureStorageTableName]);
 		}
 
-		public Task Start(string serviceId, string ruleApplicationName, Guid sessionId)
-		{
-			_serviceId = serviceId;
-			_ruleApplicationName = ruleApplicationName;
-			_sessionId = sessionId.ToString();
-			return Task.CompletedTask;
-		}
-
-		public Task LogMetric(Metric metric)
-		{
-			return _table.ExecuteAsync(TableOperation.Insert(new MetricEntity(_serviceId, _ruleApplicationName, _sessionId, metric.EntityId.Replace('/', '_'), metric.EntityName, metric.MetricJson)));
-		}
-
-		public async Task LogMetricBatch(IEnumerable<Metric> metrics)
+		public async Task LogMetrics(string serviceId, string ruleApplicationName, Guid sessionId, IEnumerable<Metric> metrics)
 		{
 			var batch = new TableBatchOperation();
 			foreach (Metric metric in metrics)
 			{
-				batch.Add(TableOperation.Insert(new MetricEntity(_serviceId, _ruleApplicationName, _sessionId, metric.EntityId.Replace('/', '_'), metric.EntityName, metric.MetricJson)));
+				batch.Add(TableOperation.Insert(new MetricEntity(serviceId, ruleApplicationName, sessionId.ToString(), metric.EntityId.Replace('/', '_'), metric.EntityName, metric.MetricJson)));
 			}
 
 			await _table.ExecuteBatchAsync(batch);
-		}
-
-		public Task End()
-		{
-			return Task.CompletedTask;
 		}
 	}
 }
