@@ -21,15 +21,26 @@ namespace InRule.Runtime.Metrics.AzureTableStorage
 			_table = tableClient.GetTableReference(ConfigurationManager.AppSettings[AzureStorageTableName]);
 		}
 
-		public async Task LogMetrics(string serviceId, string ruleApplicationName, Guid sessionId, IEnumerable<Metric> metrics)
+		public async Task LogMetricsAsync(string serviceId, string ruleApplicationName, Guid sessionId, Metric[] metrics)
 		{
 			var batch = new TableBatchOperation();
 			foreach (Metric metric in metrics)
 			{
-				batch.Add(TableOperation.Insert(new MetricEntity(serviceId, ruleApplicationName, sessionId.ToString(), metric.EntityId.Replace('/', '_'), metric.EntityName, metric.MetricJson)));
+				//batch.Add(TableOperation.Insert(new MetricEntity(serviceId, ruleApplicationName, sessionId.ToString(), metric.EntityId.Replace('/', '_'), metric.EntityName, metric.MetricJson)));
 			}
 
 			await _table.ExecuteBatchAsync(batch);
 		}
+
+	    public void LogMetrics(string serviceId, string ruleApplicationName, Guid sessionId, Metric[] metrics)
+	    {
+	        var batch = new TableBatchOperation();
+	        foreach (Metric metric in metrics)
+	        {
+	            //batch.Add(TableOperation.Insert(new MetricEntity(serviceId, ruleApplicationName, sessionId.ToString(), metric.EntityId.Replace('/', '_'), metric.EntityName, metric.MetricJson)));
+	        }
+
+	        //await _table.ExecuteBatchAsync(batch);
+	    }
 	}
 }
