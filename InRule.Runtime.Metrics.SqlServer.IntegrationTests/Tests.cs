@@ -7,6 +7,7 @@ using NUnit.Framework;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using DataType = InRule.Repository.DataType;
 
 namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
@@ -21,7 +22,6 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         [SetUp]
         public void Setup()
         {
-            Console.WriteLine("Setup.");
             var sqlConnection = new SqlConnection(ServerConnectionString);
             var server = new Server(new ServerConnection(sqlConnection));
             if (server.Databases.Contains(IntegrationTestDatabaseName))
@@ -36,7 +36,6 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         [TearDown]
         public void TearDown()
         {
-            Console.WriteLine("Teardown.");
             var sqlConnection = new SqlConnection(ServerConnectionString);
             var server = new Server(new ServerConnection(sqlConnection));
 
@@ -50,12 +49,42 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         }
 
         [Test]
+        public void GivenMetricsWithoutServiceName_MetricsAreStored()
+        {
+            var ruleAppDef = new RuleApplicationDef("TestRuleApplication");
+            var entity1Def = ruleAppDef.AddEntity("Entity1");
+            var calc1Def = entity1Def.AddField("Field1", DataType.Integer, "1");
+            calc1Def.IsMetric = true;
+
+            using (var session = new RuleSession(ruleAppDef))
+            {
+                session.Settings.MetricLogger = new MetricLogger(DatabaseConnectionString);
+
+                session.CreateEntity(entity1Def.Name);
+
+                session.ApplyRules();
+            }
+
+            using (var connection = new SqlConnection(DatabaseConnectionString))
+            using (var command = new SqlCommand())
+            {
+                var sql = $"SELECT {calc1Def.Name + "_" + calc1Def.DataType} FROM {ruleAppDef.Name + "." + entity1Def.Name}";
+                command.CommandText = sql;
+                command.Connection = connection;
+                connection.Open();
+                var metricValue = command.ExecuteScalar();
+
+                Assert.That(metricValue, Is.EqualTo(1));
+            }
+        }
+
+        [Test]
         public void GivenMetrics_MetricsAreStored()
         {
             var ruleAppDef = new RuleApplicationDef("TestRuleApplication");
             var entity1Def = ruleAppDef.AddEntity("Entity1");
             var calc1Def = entity1Def.AddField("Field1", DataType.Integer, "1");
-            calc1Def.SetAsMetric(true);
+            calc1Def.IsMetric = true;
 
             using (var session = new RuleSession(ruleAppDef))
             {
@@ -65,6 +94,18 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
                 session.CreateEntity(entity1Def.Name);
 
                 session.ApplyRules();
+            }
+
+            using(var connection = new SqlConnection(DatabaseConnectionString))
+            using(var command = new SqlCommand())
+            {
+                var sql = $"SELECT {calc1Def.Name + "_" + calc1Def.DataType} FROM {ruleAppDef.Name + "." + entity1Def.Name}";
+                command.CommandText = sql;
+                command.Connection = connection;
+                connection.Open();
+                var metricValue = command.ExecuteScalar();
+
+                Assert.That(metricValue, Is.EqualTo(1));
             }
         }
 
@@ -76,11 +117,10 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         [TestCase(DataType.String, "\"Test\"", SqlDataType.NVarCharMax)]
         public void MetricDataTypes_CreatesCorrectSqlDataTypes(DataType dataType, string defaultValue, SqlDataType sqlDataType)
         {
-            Console.WriteLine("Test.");
             var ruleAppDef = new RuleApplicationDef("TestRuleApplication");
             var entity1Def = ruleAppDef.AddEntity("Entity1");
             var field1Def = entity1Def.AddField("Field1", dataType, defaultValue);
-            field1Def.SetAsMetric(true);
+            field1Def.IsMetric = true;
 
             using (var session = new RuleSession(ruleAppDef))
             {
@@ -98,13 +138,42 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
             Assert.That(column.DataType.SqlDataType, Is.EqualTo(sqlDataType));
         }
 
+        [TestCase(DataType.Boolean, "true", SqlDataType.Bit)]
+        [TestCase(DataType.Integer, "123", SqlDataType.Int)]
+        [TestCase(DataType.Number, "123.123", SqlDataType.Decimal)]
+        [TestCase(DataType.Date, "#2019-01-02#", SqlDataType.DateTime)]
+        [TestCase(DataType.DateTime, "#2019-01-02T01:02:03#", SqlDataType.DateTime)]
+        [TestCase(DataType.String, "\"Test\"", SqlDataType.NVarCharMax)]
+        public async Task MetricDataTypes_CreatesCorrectSqlDataTypes_Async(DataType dataType, string defaultValue, SqlDataType sqlDataType)
+        {
+            var ruleAppDef = new RuleApplicationDef("TestRuleApplication");
+            var entity1Def = ruleAppDef.AddEntity("Entity1");
+            var field1Def = entity1Def.AddField("Field1", dataType, defaultValue);
+            field1Def.IsMetric = true;
+
+            using (var session = new RuleSession(ruleAppDef))
+            {
+                session.Settings.MetricLogger = new MetricLogger(DatabaseConnectionString);
+                session.Settings.MetricServiceName = "Integration Tests";
+
+                session.CreateEntity(entity1Def.Name);
+
+                await session.ApplyRulesAsync();
+            }
+
+            var table = GetTable(ruleAppDef, entity1Def);
+            var column = table.Columns[field1Def.Name + "_" + dataType];
+
+            Assert.That(column.DataType.SqlDataType, Is.EqualTo(sqlDataType));
+        }
+
         [Test]
         public void EntitySchemaChanges_WithNewLogger_DatabaseTablesSchemaChanges()
         {
             var ruleAppDef = new RuleApplicationDef("TestRuleApplication");
             var entity1Def = ruleAppDef.AddEntity("Entity1");
             var field1Def = entity1Def.AddField("Field1", DataType.Integer, "1");
-            field1Def.SetAsMetric(true);
+            field1Def.IsMetric = true;
 
             using (var session = new RuleSession(ruleAppDef))
             {
@@ -144,7 +213,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
             var ruleAppDef = new RuleApplicationDef("TestRuleApplication");
             var entity1Def = ruleAppDef.AddEntity("Entity1");
             var field1Def = entity1Def.AddField("Field1", DataType.Integer, "1");
-            field1Def.SetAsMetric(true);
+            field1Def.IsMetric = true;
 
             var metricLogger = new MetricLogger(DatabaseConnectionString);
             using (var session = new RuleSession(ruleAppDef))
@@ -185,7 +254,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
             var server = new Server(new ServerConnection(sqlConnection));
 
             var database = server.Databases[IntegrationTestDatabaseName];
-            var table = database.Tables[ruleAppDef.Name + "_" + entity1Def.Name];
+            var table = database.Tables[entity1Def.Name, ruleAppDef.Name];
 
             return table;
         }
@@ -201,7 +270,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
 
             for (int i = 1; i < 101; i++)
             {
-                entityState[i-1] = File.ReadAllText("InvoiceJsonFiles\\Invoice" + i + ".json");
+                entityState[i-1] = File.ReadAllText($"InvoiceJsonFiles\\Invoice{i}.json");
             }
 
             var stopWatch = new Stopwatch();
@@ -210,8 +279,6 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
             {
                 using (var session = new RuleSession(ruleAppDef))
                 {
-                    //session.Settings.MetricLogger = new MetricLogger("Server=tcp:ir-metrics.database.windows.net,1433;Initial Catalog=ir-metricstest;Persist Security Info=False;User ID=metrictest;Password=A5&5ySfjpnvp;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
-                    //session.Settings.MetricLogger = new NoOpLogger();
                     session.Settings.MetricLogger = new MetricLogger(DatabaseConnectionString);
                     session.Settings.MetricServiceName = "Integration Tests";
 

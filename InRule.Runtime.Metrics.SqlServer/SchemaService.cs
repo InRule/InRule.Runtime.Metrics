@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
-using System.Text;
-using InRule.Repository.RuleElements;
 using InRule.Runtime.Engine.State;
+using InRule.Runtime.Metrics.SqlServer.Logging;
 using Microsoft.SqlServer.Management.Common;
 using Microsoft.SqlServer.Management.Smo;
 using DataType = InRule.Repository.DataType;
@@ -44,7 +43,9 @@ namespace InRule.Runtime.Metrics.SqlServer
         private readonly HashSet<MetricSchemaKey> _ruleAppEntityToSchemaHashMap = new HashSet<MetricSchemaKey>();
 
         private readonly string _connectionString;
+        private static readonly ILog Log = LogProvider.For<SchemaService>();
         private SqlConnection _connection;
+
 
         public SchemaService(string connectionString)
         {
@@ -60,20 +61,29 @@ namespace InRule.Runtime.Metrics.SqlServer
             {
                 foreach (var tableToValidateSchema in entitiesInMetrics)
                 {
-                    var tableName = ruleApplicationName + "." + tableToValidateSchema.Key;
+                    var tableName = tableToValidateSchema.Key;
                     var metricSchema = tableToValidateSchema.Value;
 
                     if (!HasSchemaChanged(ruleApplicationName, tableName, tableToValidateSchema.Value))
                         continue;
 
-                    var server = new Server(new ServerConnection(Connection));
-                    var database = server.Databases[Connection.Database];
-                    var schema = GetOrAddSchema(ruleApplicationName, database);
-                    var table = GetOrAddTable(database, tableName);
+                    Log.Info("Schema has changed");
 
-                    foreach (var metricProperty in metricSchema)
+                    try
                     {
-                        GetOrAddColumn(metricProperty, table);
+                        var server = new Server(new ServerConnection(Connection));
+                        var database = server.Databases[Connection.Database];
+                        var schema = GetOrAddSchema(ruleApplicationName, database);
+                        var table = GetOrAddTable(database, schema.Name, tableName);
+
+                        foreach (var metricProperty in metricSchema)
+                        {
+                            GetOrAddColumn(metricProperty, table);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error(e, "Error updating schema!");
                     }
                 }
             }
@@ -81,12 +91,12 @@ namespace InRule.Runtime.Metrics.SqlServer
 
         private static Schema GetOrAddSchema(string ruleApplicationName, Database database)
         {
-            if (!database.Schemas.Contains(ruleApplicationName))
+            if (database.Schemas.Contains(ruleApplicationName))
                 return database.Schemas[ruleApplicationName];
             
             var schema = new Schema(database, ruleApplicationName);
             schema.Create();
-            database.Schemas.Add(schema);
+
             return schema;
         }
 
@@ -103,12 +113,13 @@ namespace InRule.Runtime.Metrics.SqlServer
             return column;
         }
 
-        private Table GetOrAddTable(Database database, string tableName)
+        private Table GetOrAddTable(Database database, string schemaName, string tableName)
         {
             Table table;
-            if (!database.Tables.Contains(tableName))
+            if (!database.Tables.Contains(tableName, schemaName))
             {
                 table = new Table(database, tableName);
+                table.Schema = schemaName;
                 foreach (var (columnName, type) in _commonColumns)
                 {
                     var column = new Column(table, columnName, _frameworkTypeToSmoTypeMap[type]);
@@ -119,7 +130,7 @@ namespace InRule.Runtime.Metrics.SqlServer
             }
             else
             {
-                table = database.Tables[tableName];
+                table = database.Tables[tableName, schemaName];
             }
 
             return table;
@@ -146,7 +157,7 @@ namespace InRule.Runtime.Metrics.SqlServer
             command.Parameters.Add("@RuleAppName", SqlDbType.NVarChar).Value = ruleAppName;
             command.Parameters.Add("@EntityName", SqlDbType.NVarChar).Value = entityName;
 
-            var metricJson = command.ExecuteScalar().ToString();
+            var metricJson = command.ExecuteScalar()?.ToString();
             if (metricJson == null)
             {
                 SerializeSchemaToDbCache(ruleAppName, entityName, newMetricSchema.GetJson(), true);
@@ -185,6 +196,8 @@ namespace InRule.Runtime.Metrics.SqlServer
             command.Parameters.Add("@RuleAppName", SqlDbType.NVarChar).Value = ruleAppName;
             command.Parameters.Add("@EntityName", SqlDbType.NVarChar).Value = entityName;
             command.Parameters.Add("@MetricSchema", SqlDbType.NVarChar).Value = metricJson;
+
+            command.ExecuteNonQuery();
         }
 
         public void Dispose()
