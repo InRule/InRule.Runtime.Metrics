@@ -52,11 +52,21 @@ namespace InRule.Runtime.Metrics.SqlServer
             _connectionString = connectionString;
         }
 
-        private SqlConnection Connection => _connection ?? (_connection = new SqlConnection(_connectionString));
+        private SqlConnection Connection
+        {
+            get
+            {
+                if(_connection == null || _connection.State == ConnectionState.Closed)
+                {
+                    _connection = new SqlConnection(_connectionString);
+                }
+                
+                return _connection;
+            }
+        }
 
         public void UpdateSchema(string ruleApplicationName, Dictionary<string, MetricSchema> entitiesInMetrics)
         {
-
             using (Connection)
             {
                 foreach (var tableToValidateSchema in entitiesInMetrics)
@@ -64,27 +74,35 @@ namespace InRule.Runtime.Metrics.SqlServer
                     var tableName = tableToValidateSchema.Key;
                     var metricSchema = tableToValidateSchema.Value;
 
-                    if (!HasSchemaChanged(ruleApplicationName, tableName, tableToValidateSchema.Value))
-                        continue;
+                    UpdateSchema(ruleApplicationName, tableName, metricSchema);
+                }
+            }
+        }
 
-                    Log.Info("Schema has changed");
+        public void UpdateSchema(string ruleApplicationName, string tableName, MetricSchema metricSchema)
+        {
+            using (Connection)
+            {
+                if (!HasSchemaChanged(ruleApplicationName, tableName, metricSchema))
+                    return;
 
-                    try
+                Log.Info("Schema has changed");
+
+                try
+                {
+                    var server = new Server(new ServerConnection(Connection));
+                    var database = server.Databases[Connection.Database];
+                    var schema = GetOrAddSchema(ruleApplicationName, database);
+                    var table = GetOrAddTable(database, schema.Name, tableName);
+
+                    foreach (var metricProperty in metricSchema)
                     {
-                        var server = new Server(new ServerConnection(Connection));
-                        var database = server.Databases[Connection.Database];
-                        var schema = GetOrAddSchema(ruleApplicationName, database);
-                        var table = GetOrAddTable(database, schema.Name, tableName);
-
-                        foreach (var metricProperty in metricSchema)
-                        {
-                            GetOrAddColumn(metricProperty, table);
-                        }
+                        GetOrAddColumn(metricProperty, table);
                     }
-                    catch (Exception e)
-                    {
-                        Log.Error(e, "Error updating schema!");
-                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e, "Error updating schema!");
                 }
             }
         }
@@ -115,23 +133,19 @@ namespace InRule.Runtime.Metrics.SqlServer
 
         private Table GetOrAddTable(Database database, string schemaName, string tableName)
         {
-            Table table;
-            if (!database.Tables.Contains(tableName, schemaName))
-            {
-                table = new Table(database, tableName);
-                table.Schema = schemaName;
-                foreach (var (columnName, type) in _commonColumns)
-                {
-                    var column = new Column(table, columnName, _frameworkTypeToSmoTypeMap[type]);
-                    table.Columns.Add(column);
-                }
+            if (database.Tables.Contains(tableName, schemaName))
+                return database.Tables[tableName, schemaName];
+            
+            var table = new Table(database, tableName);
+            table.Schema = schemaName;
 
-                table.Create();
-            }
-            else
+            foreach (var (columnName, type) in _commonColumns)
             {
-                table = database.Tables[tableName, schemaName];
-            }
+                var column = new Column(table, columnName, _frameworkTypeToSmoTypeMap[type]);
+                table.Columns.Add(column);
+            } 
+
+            table.Create();
 
             return table;
         }
@@ -165,31 +179,23 @@ namespace InRule.Runtime.Metrics.SqlServer
             }
             
             var oldSchema = MetricSchema.FromJson(new StringReader(metricJson));
-            
-            if(oldSchema.GetHashCode() != newMetricSchema.GetHashCode() 
-                || !oldSchema.Equals(newMetricSchema))
-            {
-                SerializeSchemaToDbCache(ruleAppName, entityName, newMetricSchema.GetJson(), false);
 
-                return true;
+            if (oldSchema.GetHashCode() == newMetricSchema.GetHashCode() && oldSchema.Equals(newMetricSchema))
+            {
+                return false;
             }
 
-            return false;
+            SerializeSchemaToDbCache(ruleAppName, entityName, newMetricSchema.GetJson(), false);
+
+            return true;
+
         }
 
         private void SerializeSchemaToDbCache(string ruleAppName, string entityName, string metricJson, bool isNew)
         {
-            string storageSql = "";
-            
-            if (isNew)
-            {
-                storageSql =
-                    "INSERT INTO MetricSchemaStore (RuleAppName, EntityName, MetricSchema) VALUES(@RuleAppName,@EntityName, @MetricSchema)";
-            }
-            else
-            {
-                storageSql = "UPDATE MetricSchemaStore SET MetricSchema = @MetricSchema where RuleAppName = @RuleAppName AND EntityName = @EntityName";
-            }
+            var storageSql = isNew 
+                ? "INSERT INTO MetricSchemaStore (RuleAppName, EntityName, MetricSchema) VALUES(@RuleAppName,@EntityName, @MetricSchema)" 
+                : "UPDATE MetricSchemaStore SET MetricSchema = @MetricSchema where RuleAppName = @RuleAppName AND EntityName = @EntityName";
 
             var command = Connection.CreateCommand();
             command.CommandText = storageSql;

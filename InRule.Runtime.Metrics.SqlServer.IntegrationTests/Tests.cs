@@ -262,7 +262,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
 
         [Test]
         [Explicit]
-        public void Adhoc()
+        public void Adhoc_PerformanceTest_Harness()
         {
             var ruleAppDef = RuleApplicationDef.Load("InvoiceForKpis.ruleappx");
 

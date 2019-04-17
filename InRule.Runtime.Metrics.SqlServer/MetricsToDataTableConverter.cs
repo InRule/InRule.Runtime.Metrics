@@ -8,7 +8,7 @@ namespace InRule.Runtime.Metrics.SqlServer
 {
     public static class MetricsToDataTableConverter
     {
-        private static readonly Dictionary<DataType, Type> _inRuleToFrameworkTypeMap = new Dictionary<DataType, Type>
+        private static readonly Dictionary<DataType, Type> InRuleToFrameworkTypeMap = new Dictionary<DataType, Type>
         {
             {DataType.String, typeof(string)},
             {DataType.Integer, typeof(int)},
@@ -18,7 +18,7 @@ namespace InRule.Runtime.Metrics.SqlServer
             {DataType.Boolean, typeof(bool)}
         };
 
-        private static readonly List<(string, Type)> _commonColumns = new List<(string, Type)>
+        private static readonly List<(string, Type)> CommonColumns = new List<(string, Type)>
         {
             ("ServiceId", typeof(string)),
             ("RuleApplicationName", typeof(string)),
@@ -72,14 +72,14 @@ namespace InRule.Runtime.Metrics.SqlServer
 
             dataTable = new DataTable();
 
-            foreach (var (columnName, type) in _commonColumns)
+            foreach (var (columnName, type) in CommonColumns)
             {
                 dataTable.Columns.Add(columnName, type);
             }
 
             foreach (var metricProperty in metric.Schema)
             {
-                dataTable.Columns.Add(metricProperty.GetMetricColumnName(), _inRuleToFrameworkTypeMap[metricProperty.DataType]);
+                dataTable.Columns.Add(metricProperty.GetMetricColumnName(), InRuleToFrameworkTypeMap[metricProperty.DataType]);
             }
 
             entityToDataTableMap.Add(metric.EntityName, dataTable);
