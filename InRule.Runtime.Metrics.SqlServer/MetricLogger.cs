@@ -31,10 +31,13 @@ namespace InRule.Runtime.Metrics.SqlServer
         private static readonly string[] CommonColumns = {
             "ServiceId",
             "RuleApplicationName",
-            "SessionId"
+            "SessionId",
+            "IsRule",
+            "EntityId",
+            "MetricSchemaVersion"
         };
 
-        private SchemaService _schemaService;
+        private readonly SchemaService _schemaService;
 
         public MetricLogger() : this(ConfigurationManager.AppSettings[SqlServerConnectionStringKeyName])
         {
@@ -61,7 +64,6 @@ namespace InRule.Runtime.Metrics.SqlServer
             _schemaService = new SchemaService(_connectionString);
         }
 
-
         public async Task LogMetricsAsync(string serviceId, string ruleApplicationName, Guid sessionId, Metric[] metrics)
         {
             if (metrics.Length < 1000)
@@ -74,7 +76,6 @@ namespace InRule.Runtime.Metrics.SqlServer
 
             await CopyToServerAsync(ruleApplicationName, entityNameToDataTableMap);
         }
-
 
         public void LogMetrics(string serviceId, string ruleApplicationName, Guid sessionId, Metric[] metrics)
         {
@@ -102,8 +103,6 @@ namespace InRule.Runtime.Metrics.SqlServer
         private void CopyToServer(string ruleApplicationName, Metric[] metrics)
         {
             var entityToMetricMap = metrics.GroupBy(x => x.EntityName, x=> x, (key, group) => new { EntityName = key, Metrics = group.ToArray() });
-
-            var hashOfTableNames = new HashSet<string>();
             
             foreach (var entityNameWithMetrics in entityToMetricMap)
             {
@@ -119,9 +118,36 @@ namespace InRule.Runtime.Metrics.SqlServer
                     sqlConnection.Open();
                     foreach (var row in entityNameWithMetrics.Metrics)
                     {
-                        PopulateInsertParameters(sqlCommand, row);
+                        PopulateInsertParameters(sqlCommand, row, metricByEntityName.Schema.Version);
 
                         sqlCommand.ExecuteNonQuery();
+                    }
+                    sqlConnection.Close();
+                }
+            }
+        }
+
+        private async Task CopyToServerAsync(string ruleApplicationName, Metric[] metrics)
+        {
+            var entityToMetricMap = metrics.GroupBy(x => x.EntityName, x => x, (key, group) => new {EntityName = key, Metrics = group.ToArray()});
+            
+            foreach (var entityNameWithMetrics in entityToMetricMap)
+            {
+                var entityName = entityNameWithMetrics.EntityName;
+                var metricByEntityName = entityNameWithMetrics.Metrics[0];
+                _schemaService.UpdateSchema(ruleApplicationName, entityName, metricByEntityName.Schema);
+
+                var insertStatement = BuildParameterizedInsertStatement(ruleApplicationName, metricByEntityName.EntityName, metricByEntityName.Schema);
+                
+                using (var sqlConnection = new SqlConnection(_connectionString))
+                using (var sqlCommand = new SqlCommand(insertStatement, sqlConnection))
+                {
+                    await sqlConnection.OpenAsync();
+                    foreach (var row in entityNameWithMetrics.Metrics)
+                    {
+                        PopulateInsertParameters(sqlCommand, row, metricByEntityName.Schema.Version);
+
+                        await sqlCommand.ExecuteNonQueryAsync();
                     }
                     sqlConnection.Close();
                 }
@@ -137,39 +163,6 @@ namespace InRule.Runtime.Metrics.SqlServer
                 {
                     bulkCopy.DestinationTableName = ruleApplicationName + "." + entityToDataTable.Key;
                     bulkCopy.WriteToServer(entityToDataTable.Value);
-                }
-            }
-        }
-
-        private async Task CopyToServerAsync(string ruleApplicationName, Metric[] metrics)
-        {
-            var entityToMetricMap = metrics.GroupBy(x => x.EntityName, x => x, (key, group) => new {EntityName = key, Metrics = group.ToArray()});
-            var hashOfTableNames = new HashSet<string>();
-
-
-            foreach (var entityNameWithMetrics in entityToMetricMap)
-            {
-                var entityName = entityNameWithMetrics.EntityName;
-                var metricByEntityName = entityNameWithMetrics.Metrics[0];
-                if (!hashOfTableNames.Contains(entityName))
-                {
-                    hashOfTableNames.Add(entityName);
-                    _schemaService.UpdateSchema(ruleApplicationName, entityName, metricByEntityName.Schema);
-                }
-
-                var insertStatement = BuildParameterizedInsertStatement(ruleApplicationName, metricByEntityName.EntityName, metricByEntityName.Schema);
-                
-                using (var sqlConnection = new SqlConnection(_connectionString))
-                using (var sqlCommand = new SqlCommand(insertStatement, sqlConnection))
-                {
-                    await sqlConnection.OpenAsync();
-                    foreach (var row in entityNameWithMetrics.Metrics)
-                    {
-                        PopulateInsertParameters(sqlCommand, row);
-
-                        await sqlCommand.ExecuteNonQueryAsync();
-                    }
-                    sqlConnection.Close();
                 }
             }
         }
@@ -218,16 +211,20 @@ namespace InRule.Runtime.Metrics.SqlServer
             return insertStatement;
         }
 
-        private static void PopulateInsertParameters(SqlCommand sqlCommand, Metric row)
+        private static void PopulateInsertParameters(SqlCommand sqlCommand, Metric row, int metricSchemaVersion)
         {
             sqlCommand.Parameters.Clear();
 
             sqlCommand.Parameters.Add("@ServiceId", SqlDbType.NVarChar).Value = row.ServiceId;
             sqlCommand.Parameters.Add("@RuleApplicationName", SqlDbType.NVarChar).Value = row.RuleApplicationName;
             sqlCommand.Parameters.Add("@SessionId", SqlDbType.NVarChar).Value = row.SessionId.ToString();
+            sqlCommand.Parameters.Add("@EntityId", SqlDbType.NVarChar).Value = row.EntityId;           
 
             foreach (var column in row.Schema)
             {
+                sqlCommand.Parameters.Add("@IsRule", SqlDbType.NVarChar).Value = column.IsRule;
+                sqlCommand.Parameters.Add("@MetricSchemaVersion", SqlDbType.Int).Value = metricSchemaVersion;
+
                 sqlCommand.Parameters.Add("@" + column.GetMetricColumnName(), InRuleTypeToSqlTypeMap[column.DataType]).Value =
                     row[column];
             }

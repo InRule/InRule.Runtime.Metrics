@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="InRule.Repository.Extensions" Version="5.2.1-labs-kpis0001-0191" />
-    <PackageReference Include="InRule.Runtime" Version="5.2.1-labs-kpis0001-0191" />
+    <PackageReference Include="InRule.Repository.Extensions" Version="5.3.2-labs-kpis0001-0043" />
+    <PackageReference Include="InRule.Runtime" Version="5.3.2-labs-kpis0001-0043" />
     <PackageReference Include="nunit" Version="3.11.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />

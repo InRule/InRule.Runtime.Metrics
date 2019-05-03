@@ -37,7 +37,10 @@ namespace InRule.Runtime.Metrics.SqlServer
         {
             ("ServiceId", typeof(string)),
             ("RuleApplicationName", typeof(string)),
-            ("SessionId", typeof(string))
+            ("SessionId", typeof(string)),
+            ("IsRule", typeof(bool)),
+            ("EntityId", typeof(string)),
+            ("MetricSchemaVersion", typeof(int))
         };
 
         private readonly HashSet<MetricSchemaKey> _ruleAppEntityToSchemaHashMap = new HashSet<MetricSchemaKey>();

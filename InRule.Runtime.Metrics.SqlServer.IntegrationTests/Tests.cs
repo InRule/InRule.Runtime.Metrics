@@ -107,6 +107,40 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
 
                 Assert.That(metricValue, Is.EqualTo(1));
             }
+
+
+        }
+
+        [Test]
+        public void GivenMetrics_InBulk_MetricsAreStored()
+        {
+            var ruleAppDef = new RuleApplicationDef("TestRuleApplication");
+            var entity1Def = ruleAppDef.AddEntity("Entity1");
+            var calc1Def = entity1Def.AddField("Field1", DataType.Integer, "1");
+            calc1Def.IsMetric = true;
+
+            using (var session = new RuleSession(ruleAppDef))
+            {
+                session.Settings.MetricLogger = new MetricLogger(DatabaseConnectionString);
+                session.Settings.MetricServiceName = "Integration Tests";
+
+                session.CreateEntity(entity1Def.Name);
+
+                session.ApplyRules();
+            }
+
+            using (var connection = new SqlConnection(DatabaseConnectionString))
+            using (var command = new SqlCommand())
+            {
+                var sql =
+                    $"SELECT {calc1Def.Name + "_" + calc1Def.DataType} FROM {ruleAppDef.Name + "." + entity1Def.Name}";
+                command.CommandText = sql;
+                command.Connection = connection;
+                connection.Open();
+                var metricValue = command.ExecuteScalar();
+
+                Assert.That(metricValue, Is.EqualTo(1));
+            }
         }
 
         [TestCase(DataType.Boolean, "true", SqlDataType.Bit)]
