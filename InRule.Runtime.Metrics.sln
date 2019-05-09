@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InRule.Runtime.Metrics.Azur
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InRule.Runtime.Metrics.SqlServer", "InRule.Runtime.Metrics.SqlServer\InRule.Runtime.Metrics.SqlServer.csproj", "{A47E0A35-E2A7-495B-AE1B-68F82C28D2B9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InRule.Runtime.Metrics.SqlServer.IntegrationTests", "InRule.Runtime.Metrics.SqlServer.IntegrationTests\InRule.Runtime.Metrics.SqlServer.IntegrationTests.csproj", "{F8B17BAE-F0C5-43B9-8676-FB718905E6FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InRule.Runtime.Metrics.SqlServer.IntegrationTests", "InRule.Runtime.Metrics.SqlServer.IntegrationTests\InRule.Runtime.Metrics.SqlServer.IntegrationTests.csproj", "{F8B17BAE-F0C5-43B9-8676-FB718905E6FB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

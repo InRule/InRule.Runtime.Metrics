@@ -35,12 +35,11 @@ namespace InRule.Runtime.Metrics.SqlServer
 
         private readonly List<(string, Type)> _commonColumns = new List<(string, Type)>
         {
+			("MetricSchemaVersion", typeof(int)),
             ("ServiceId", typeof(string)),
             ("RuleApplicationName", typeof(string)),
             ("SessionId", typeof(string)),
-            ("IsRule", typeof(bool)),
-            ("EntityId", typeof(string)),
-            ("MetricSchemaVersion", typeof(int))
+            ("EntityId", typeof(string))
         };
 
         private readonly HashSet<MetricSchemaKey> _ruleAppEntityToSchemaHashMap = new HashSet<MetricSchemaKey>();
