@@ -23,7 +23,7 @@ using (var session = new RuleSession(ruleApplicationDef))
   <inrule.runtime>
     <ruleEngine 
                 metricLoggerAssemblyName="InRule.Runtime.Metrics.SqlServer" 
-                metricLoggerTypeName"InRule.Runtime.Metrics.SqlServer.MetricLogger" 
+                metricLoggerTypeName="InRule.Runtime.Metrics.SqlServer.MetricLogger" 
                 metricLoggerServiceName="Development"/> <!-- Optional Name -->
   </inrule.runtime>
 </configuration>
