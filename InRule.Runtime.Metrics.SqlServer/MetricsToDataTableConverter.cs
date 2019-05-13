@@ -20,17 +20,18 @@ namespace InRule.Runtime.Metrics.SqlServer
 
         private static readonly List<(string, Type)> CommonColumns = new List<(string, Type)>
         {
-            ("ServiceId", typeof(string)),
+			("MetricSchemaVersion", typeof(int)),
+			("ServiceId", typeof(string)),
             ("RuleApplicationName", typeof(string)),
-            ("SessionId", typeof(string))
+			("SessionId", typeof(string)),
+			("EntityId", typeof(string)),
         };
 
 
-        public static Dictionary<string, MetricSchema> ConvertMetricsToDataTables(string serviceId, string ruleApplicationName, Guid sessionId,
-            IEnumerable<Metric> metrics, Dictionary<string, DataTable> entityToDataTableMap)
+        public static Dictionary<string, MetricSchema> ConvertMetricsToDataTables(string serviceId, string ruleApplicationName, Guid sessionId, IEnumerable<Metric> metrics, Dictionary<string, DataTable> entityToDataTableMap)
         {
             Dictionary<string, MetricSchema> mapOfTablesToCheck = new Dictionary<string, MetricSchema>();
-            foreach (var metric in metrics)
+            foreach (Metric metric in metrics)
             {
                 if (GetOrCreateDataTable(entityToDataTableMap, metric, out DataTable dataTable))
                 {
@@ -38,11 +39,13 @@ namespace InRule.Runtime.Metrics.SqlServer
                 }
 
                 var metricRow = dataTable.NewRow();
-                metricRow["ServiceId"] = serviceId;
+				metricRow["MetricSchemaVersion"] = metric.Schema.Version;
+				metricRow["ServiceId"] = serviceId;
                 metricRow["RuleApplicationName"] = ruleApplicationName;
-                metricRow["SessionId"] = sessionId.ToString();
+				metricRow["SessionId"] = sessionId.ToString();
+				metricRow["EntityId"] = metric.EntityId;
 
-                foreach (var metricProperty in metric.Schema.Properties)
+				foreach (MetricProperty metricProperty in metric.Schema.Properties)
                 {
                     var value = metric[metricProperty] ?? DBNull.Value;
                     metricRow[metricProperty.GetMetricColumnName()] = value;
