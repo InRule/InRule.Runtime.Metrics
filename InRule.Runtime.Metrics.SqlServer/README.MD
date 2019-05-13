@@ -22,7 +22,7 @@ using (var session = new RuleSession(ruleApplicationDef))
   
   <appSettings>
     <!-- Connection String to Metrics storage location -->
-    <add key="inrule:runtime:metrics:sqlServer:connectionString" value="Development" />  
+    <add key="inrule:runtime:metrics:sqlServer:connectionString" value="" />  
   </appSettings>  
     
   <inrule.runtime>
@@ -46,7 +46,7 @@ using (var session = new RuleSession(ruleApplicationDef))
     <!-- Optional Name -->
     <add key="inrule:runtime:ruleEngine:metricLoggerServiceName" value="Development" />
     <!-- Connection String to Metrics storage location -->
-    <add key="inrule:runtime:metrics:sqlServer:connectionString" value="Development" />  
+    <add key="inrule:runtime:metrics:sqlServer:connectionString" value="" />  
   </appSettings>
 </configuration>
 ```
