@@ -40,7 +40,7 @@ Task("Restore .NET Dependencies")
 {
   ICollection<string> sources;
 
-  if (HasArgument("nugetSourceFeedUrl"))
+  if (!string.IsNullOrWhiteSpace(nugetSourceFeedUrl))
   {
     Warning("{0} added as an additional NuGet feed.", nugetSourceFeedUrl);
     sources = new[] { nugetSourceFeedUrl, nuGetOrgUrl };
