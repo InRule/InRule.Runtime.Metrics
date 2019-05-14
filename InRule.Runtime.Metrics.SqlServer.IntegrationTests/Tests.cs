@@ -1,13 +1,13 @@
 using System;
-using InRule.Repository;
-using InRule.Repository.Infos;
-using Microsoft.SqlServer.Management.Common;
-using Microsoft.SqlServer.Management.Smo;
-using NUnit.Framework;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using InRule.Repository;
+using InRule.Repository.Classifications;
+using Microsoft.SqlServer.Management.Common;
+using Microsoft.SqlServer.Management.Smo;
+using NUnit.Framework;
 using DataType = InRule.Repository.DataType;
 
 namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
@@ -17,20 +17,21 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         private const string ServerConnectionString = "Server=(localdb)\\MSSQLLocalDB;Integrated Security=true";
         private const string IntegrationTestDatabaseName = "MetricTesting";
 
-        private const string DatabaseConnectionString = ServerConnectionString + ";Initial Catalog=" + IntegrationTestDatabaseName;
+        private const string DatabaseConnectionString =
+            ServerConnectionString + ";Initial Catalog=" + IntegrationTestDatabaseName;
 
-		private static Table GetTable(RuleApplicationDef ruleAppDef, EntityDef entity1Def)
-		{
-			var sqlConnection = new SqlConnection(ServerConnectionString);
-			var server = new Server(new ServerConnection(sqlConnection));
+        private static Table GetTable(RuleApplicationDef ruleAppDef, EntityDef entity1Def)
+        {
+            var sqlConnection = new SqlConnection(ServerConnectionString);
+            var server = new Server(new ServerConnection(sqlConnection));
 
-			var database = server.Databases[IntegrationTestDatabaseName];
-			var table = database.Tables[entity1Def.Name, ruleAppDef.Name];
+            var database = server.Databases[IntegrationTestDatabaseName];
+            var table = database.Tables[entity1Def.Name, ruleAppDef.Name];
 
-			return table;
-		}
+            return table;
+        }
 
-		[SetUp]
+        [SetUp]
         public void Setup()
         {
             var sqlConnection = new SqlConnection(ServerConnectionString);
@@ -38,10 +39,10 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
 
             if (!server.Databases.Contains(IntegrationTestDatabaseName))
             {
-				var database = new Database(server, IntegrationTestDatabaseName);
-				database.Create();
-			}
-		}
+                var database = new Database(server, IntegrationTestDatabaseName);
+                database.Create();
+            }
+        }
 
         [TearDown]
         public void TearDown()
@@ -51,44 +52,45 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
 
             if (server.Databases.Contains(IntegrationTestDatabaseName))
             {
-				server.KillAllProcesses(IntegrationTestDatabaseName);
-				server.KillDatabase(IntegrationTestDatabaseName);
+                server.KillAllProcesses(IntegrationTestDatabaseName);
+                server.KillDatabase(IntegrationTestDatabaseName);
             }
-		}
+        }
 
-		[Test]
-		[Explicit]
-		public void Adhoc_PerformanceTest_Harness()
-		{
-			var ruleAppDef = RuleApplicationDef.Load("InvoiceForKpis.ruleappx");
+        [Test]
+        [Explicit]
+        public void Adhoc_PerformanceTest_Harness()
+        {
+            var ruleAppDef = RuleApplicationDef.Load("InvoiceForKpis.ruleappx");
 
-			var entityState = new string[100];
+            var entityState = new string[100];
 
-			for (int i = 1; i < 101; i++)
-			{
-				entityState[i - 1] = File.ReadAllText($"InvoiceJsonFiles\\Invoice{i}.json");
-			}
+            for (var i = 1; i < 101; i++)
+            {
+                entityState[i - 1] = File.ReadAllText($"InvoiceJsonFiles\\Invoice{i}.json");
+            }
 
-			var stopWatch = new Stopwatch();
-			stopWatch.Start();
-			for (int i = 1; i < 101; i++)
-			{
-				using (var session = new RuleSession(ruleAppDef))
-				{
-					session.Settings.MetricLogger = new MetricLogger(DatabaseConnectionString);
-					session.Settings.MetricServiceName = "Integration Tests";
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+            for (var i = 1; i < 101; i++)
+            {
+                using (var session = new RuleSession(ruleAppDef))
+                {
+                    session.Settings.MetricLogger = new MetricLogger(DatabaseConnectionString);
+                    session.Settings.MetricServiceName = "Integration Tests";
 
-					var invoice = session.CreateEntity("Invoice");
-					invoice.ParseJson(entityState[i - 1]);
+                    var invoice = session.CreateEntity("Invoice");
+                    invoice.ParseJson(entityState[i - 1]);
 
-					session.ApplyRules();
-				}
-			}
-			stopWatch.Stop();
-			Console.WriteLine("Execution Time:" + stopWatch.ElapsedMilliseconds);
-		}
+                    session.ApplyRules();
+                }
+            }
 
-		[Test]
+            stopWatch.Stop();
+            Console.WriteLine("Execution Time:" + stopWatch.ElapsedMilliseconds);
+        }
+
+        [Test]
         public void GivenMetricsWithoutServiceName_MetricsAreStored()
         {
             var ra = new RuleApplicationDef("TestRuleApplication");
@@ -122,62 +124,64 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         public void GivenMetrics_MetricsAreStored()
         {
             var ra = new RuleApplicationDef("TestRuleApplication");
-			var e1Def = ra.AddEntity("e1");
-			var e2Def = ra.AddEntity("e2");
-			var ec1Def = e1Def.AddEntityCollection("ec1", e2Def.Name);
+            var e1Def = ra.AddEntity("e1");
+            var e2Def = ra.AddEntity("e2");
+            var ec1Def = e1Def.AddEntityCollection("ec1", e2Def.Name);
             var f1Def = e1Def.AddField("f1", DataType.Integer, "123");
             f1Def.IsMetric = true;
-			var f2Def = e2Def.AddField("f2", DataType.Integer);
-			var f3Def = e2Def.AddCalcField("f3", DataType.String, $"Concat(\"Test\", {f2Def.Name})");
-			f2Def.IsMetric = true;
-			f3Def.IsMetric = true;
+            var f2Def = e2Def.AddField("f2", DataType.Integer);
+            var f3Def = e2Def.AddCalcField("f3", DataType.String, $"Concat(\"Test\", {f2Def.Name})");
+            f2Def.IsMetric = true;
+            f3Def.IsMetric = true;
 
-			using (var session = new RuleSession(ra))
+            using (var session = new RuleSession(ra))
             {
                 session.Settings.MetricLogger = new MetricLogger(DatabaseConnectionString);
                 session.Settings.MetricServiceName = "Integration Tests";
 
                 var e1 = session.CreateEntity(e1Def.Name);
-				var ec1 = e1.Collections[ec1Def.Name];
-				ec1.Add().Fields[f2Def.Name].SetValue(1);
-				ec1.Add().Fields[f2Def.Name].SetValue(2);
-				ec1.Add().Fields[f2Def.Name].SetValue(3);
+                var ec1 = e1.Collections[ec1Def.Name];
+                ec1.Add().Fields[f2Def.Name].SetValue(1);
+                ec1.Add().Fields[f2Def.Name].SetValue(2);
+                ec1.Add().Fields[f2Def.Name].SetValue(3);
                 session.ApplyRules();
             }
 
-			using (var connection = new SqlConnection(DatabaseConnectionString))
-			{
-				using (var command = new SqlCommand())
-				{
-					command.CommandText = $"SELECT {f1Def.Name}_{f1Def.DataType} FROM {ra.Name}.{e1Def.Name}";
-					command.Connection = connection;
-					connection.Open();
-					using (var reader = command.ExecuteReader())
-					{
-						Assert.That(reader.Read(), Is.True);
-						Assert.That(reader.GetInt32(0), Is.EqualTo(123));
-					}
-				}
-				using (var command = new SqlCommand())
-				{
-					command.CommandText = $"SELECT {f2Def.Name}_{f2Def.DataType}, {f3Def.Name}_{f3Def.DataType} FROM {ra.Name}.{e2Def.Name}";
-					command.Connection = connection;
-					using (var reader = command.ExecuteReader())
-					{
-						Assert.That(reader.Read(), Is.True);
-						Assert.That(reader.GetInt32(0), Is.EqualTo(1));
-						Assert.That(reader.GetString(1), Is.EqualTo("Test1"));
-						Assert.That(reader.Read(), Is.True);
-						Assert.That(reader.GetInt32(0), Is.EqualTo(2));
-						Assert.That(reader.GetString(1), Is.EqualTo("Test2"));
-						Assert.That(reader.Read(), Is.True);
-						Assert.That(reader.GetInt32(0), Is.EqualTo(3));
-						Assert.That(reader.GetString(1), Is.EqualTo("Test3"));
-						Assert.That(reader.Read(), Is.False);
-					}
-				}
-			}
-		}
+            using (var connection = new SqlConnection(DatabaseConnectionString))
+            {
+                using (var command = new SqlCommand())
+                {
+                    command.CommandText = $"SELECT {f1Def.Name}_{f1Def.DataType} FROM {ra.Name}.{e1Def.Name}";
+                    command.Connection = connection;
+                    connection.Open();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        Assert.That(reader.Read(), Is.True);
+                        Assert.That(reader.GetInt32(0), Is.EqualTo(123));
+                    }
+                }
+
+                using (var command = new SqlCommand())
+                {
+                    command.CommandText =
+                        $"SELECT {f2Def.Name}_{f2Def.DataType}, {f3Def.Name}_{f3Def.DataType} FROM {ra.Name}.{e2Def.Name}";
+                    command.Connection = connection;
+                    using (var reader = command.ExecuteReader())
+                    {
+                        Assert.That(reader.Read(), Is.True);
+                        Assert.That(reader.GetInt32(0), Is.EqualTo(1));
+                        Assert.That(reader.GetString(1), Is.EqualTo("Test1"));
+                        Assert.That(reader.Read(), Is.True);
+                        Assert.That(reader.GetInt32(0), Is.EqualTo(2));
+                        Assert.That(reader.GetString(1), Is.EqualTo("Test2"));
+                        Assert.That(reader.Read(), Is.True);
+                        Assert.That(reader.GetInt32(0), Is.EqualTo(3));
+                        Assert.That(reader.GetString(1), Is.EqualTo("Test3"));
+                        Assert.That(reader.Read(), Is.False);
+                    }
+                }
+            }
+        }
 
         [TestCase(DataType.Boolean, "true", SqlDataType.Bit)]
         [TestCase(DataType.Integer, "123", SqlDataType.Int)]
@@ -185,7 +189,8 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         [TestCase(DataType.Date, "#2019-01-02#", SqlDataType.DateTime)]
         [TestCase(DataType.DateTime, "#2019-01-02T01:02:03#", SqlDataType.DateTime)]
         [TestCase(DataType.String, "\"Test\"", SqlDataType.NVarCharMax)]
-        public void MetricDataTypes_CreatesCorrectSqlDataTypes(DataType dataType, string defaultValue, SqlDataType sqlDataType)
+        public void MetricDataTypes_CreatesCorrectSqlDataTypes(DataType dataType, string defaultValue,
+            SqlDataType sqlDataType)
         {
             var ruleAppDef = new RuleApplicationDef("TestRuleApplication");
             var entity1Def = ruleAppDef.AddEntity("Entity1");
@@ -214,7 +219,8 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         [TestCase(DataType.Date, "#2019-01-02#", SqlDataType.DateTime)]
         [TestCase(DataType.DateTime, "#2019-01-02T01:02:03#", SqlDataType.DateTime)]
         [TestCase(DataType.String, "\"Test\"", SqlDataType.NVarCharMax)]
-        public async Task MetricDataTypes_CreatesCorrectSqlDataTypes_Async(DataType dataType, string defaultValue, SqlDataType sqlDataType)
+        public async Task MetricDataTypes_CreatesCorrectSqlDataTypes_Async(DataType dataType, string defaultValue,
+            SqlDataType sqlDataType)
         {
             var ruleAppDef = new RuleApplicationDef("TestRuleApplication");
             var entity1Def = ruleAppDef.AddEntity("Entity1");
@@ -318,61 +324,64 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
             Assert.That(column.DataType.SqlDataType, Is.EqualTo(SqlDataType.NVarCharMax));
         }
 
-		[Test]
-		public void GreaterThan1000Metrics_WritesSqlViaBulkCopy()
-		{
-			var ra = new RuleApplicationDef(nameof(GreaterThan1000Metrics_WritesSqlViaBulkCopy));
-			var e1Def = ra.AddEntity("e1");
-			var e2Def = ra.AddEntity("e2");
-			var ec1Def = e1Def.AddEntityCollection("ec1", e2Def.Name);
-			var f2Def = e2Def.AddField("f2", DataType.Integer);
-			var f3Def = e2Def.AddCalcField("f3", DataType.String, $"Concat(\"Test\", {f2Def.Name})");
-			f2Def.IsMetric = true;
-			f3Def.IsMetric = true;
-			e1Def.AddAutoSeqRuleSet("rs1")
-				 .AddSimpleRule("ifThen1", $"Count({ec1Def.Name}) < {MetricLogger.BulkCopyMetricsThreshold}")
-				 .AddAddCollectionMemberAction("add1", ec1Def.Name, new NameExpressionPairDef(f2Def.Name, $"Count({ec1Def.Name})"));
+        [Test]
+        public void GreaterThan1000Metrics_WritesSqlViaBulkCopy()
+        {
+            var ra = new RuleApplicationDef(nameof(GreaterThan1000Metrics_WritesSqlViaBulkCopy));
+            var e1Def = ra.AddEntity("e1");
+            var e2Def = ra.AddEntity("e2");
+            var ec1Def = e1Def.AddEntityCollection("ec1", e2Def.Name);
+            var f2Def = e2Def.AddField("f2", DataType.Integer);
+            var f3Def = e2Def.AddCalcField("f3", DataType.String, $"Concat(\"Test\", {f2Def.Name})");
+            f2Def.IsMetric = true;
+            f3Def.IsMetric = true;
+            e1Def.AddAutoSeqRuleSet("rs1")
+                .AddSimpleRule("ifThen1", $"Count({ec1Def.Name}) < {MetricLogger.BulkCopyMetricsThreshold}")
+                .AddAddCollectionMemberAction("add1", ec1Def.Name,
+                    new NameExpressionPairDef(f2Def.Name, $"Count({ec1Def.Name})"));
 
-			using (var session = new RuleSession(ra))
-			{
-				session.Settings.MetricLogger = new MetricLogger(DatabaseConnectionString);
-				session.Settings.MetricServiceName = "Integration Tests";
+            using (var session = new RuleSession(ra))
+            {
+                session.Settings.MetricLogger = new MetricLogger(DatabaseConnectionString);
+                session.Settings.MetricServiceName = "Integration Tests";
 
-				var e1 = session.CreateEntity(e1Def.Name);
-				var ec1 = e1.Collections[ec1Def.Name];
-				session.ApplyRules();
+                var e1 = session.CreateEntity(e1Def.Name);
+                var ec1 = e1.Collections[ec1Def.Name];
+                session.ApplyRules();
 
-				Assert.That(ec1.Count, Is.EqualTo(MetricLogger.BulkCopyMetricsThreshold));
-				Assert.That(ec1[0].Fields[f2Def.Name].Value.ToInt32(), Is.EqualTo(1));
-				Assert.That(ec1[999].Fields[f2Def.Name].Value.ToInt32(), Is.EqualTo(1000));
-			}
+                Assert.That(ec1.Count, Is.EqualTo(MetricLogger.BulkCopyMetricsThreshold));
+                Assert.That(ec1[0].Fields[f2Def.Name].Value.ToInt32(), Is.EqualTo(1));
+                Assert.That(ec1[999].Fields[f2Def.Name].Value.ToInt32(), Is.EqualTo(1000));
+            }
 
-			using (var connection = new SqlConnection(DatabaseConnectionString))
-			using (var command = new SqlCommand())
-			{
-				var sql = $"SELECT {f2Def.Name}_{f2Def.DataType}, {f3Def.Name}_{f3Def.DataType} FROM {ra.Name}.{e2Def.Name}";
-				command.CommandText = sql;
-				command.Connection = connection;
-				connection.Open();
-				using (var reader = command.ExecuteReader())
-				{
-					reader.Read();
-					Assert.That(reader.GetInt32(0), Is.EqualTo(1));
+            using (var connection = new SqlConnection(DatabaseConnectionString))
+            using (var command = new SqlCommand())
+            {
+                var sql =
+                    $"SELECT {f2Def.Name}_{f2Def.DataType}, {f3Def.Name}_{f3Def.DataType} FROM {ra.Name}.{e2Def.Name}";
+                command.CommandText = sql;
+                command.Connection = connection;
+                connection.Open();
+                using (var reader = command.ExecuteReader())
+                {
+                    reader.Read();
+                    Assert.That(reader.GetInt32(0), Is.EqualTo(1));
 
-					int rowCount = 1;
-					int lastRowIntValue = -1;
-					string lastRowStringValue = null;
-					while (reader.Read())
-					{
-						lastRowIntValue = reader.GetInt32(0);
-						lastRowStringValue = reader.GetString(1);
-						rowCount++;
-					}
-					Assert.That(rowCount, Is.EqualTo(MetricLogger.BulkCopyMetricsThreshold));
-					Assert.That(lastRowIntValue, Is.EqualTo(1000));
-					Assert.That(lastRowStringValue, Is.EqualTo("Test1000"));
-				}
-			}
-		}
-	}
+                    var rowCount = 1;
+                    var lastRowIntValue = -1;
+                    string lastRowStringValue = null;
+                    while (reader.Read())
+                    {
+                        lastRowIntValue = reader.GetInt32(0);
+                        lastRowStringValue = reader.GetString(1);
+                        rowCount++;
+                    }
+
+                    Assert.That(rowCount, Is.EqualTo(MetricLogger.BulkCopyMetricsThreshold));
+                    Assert.That(lastRowIntValue, Is.EqualTo(1000));
+                    Assert.That(lastRowStringValue, Is.EqualTo("Test1000"));
+                }
+            }
+        }
+    }
 }
