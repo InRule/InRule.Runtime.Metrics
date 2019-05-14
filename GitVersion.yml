@@ -1,0 +1,13 @@
+next-version: 5.4.0
+assembly-versioning-scheme: MajorMinorPatch
+mode: ContinuousDelivery
+tag-prefix: release-
+branches:
+  develop:
+    tag: develop
+    increment: Patch
+  issue?[/-]:
+    tag: useBranchName
+    increment: Patch
+ignore:
+  sha: []
