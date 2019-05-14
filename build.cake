@@ -3,11 +3,11 @@
 //////////////////////////////////////////////////////////////////////
 
 var target = Argument("target", "Local");
-var nugetSourceFeedUrl = Argument("nugetSourceFeedUrl", "");
-var versionPrefix = Argument("versionPrefix", "5.4.0");
-var versionSuffix = Argument("versionSuffix", "0");
-var nugetPushFeedUrl = Argument("nugetPushFeedUrl", "");
-var nugetPushApiKey = Argument("nugetPushApiKey", "");
+var nugetSourceFeedUrl = Argument("nugetSourceFeedUrl", EnvironmentVariable("NuGet_Source_Feed_Url") ?? "");
+var versionPrefix = Argument("versionPrefix", EnvironmentVariable("Version_Prefix") ?? "5.4.0");
+var versionSuffix = Argument("versionSuffix", EnvironmentVariable("Version_Suffix") ?? "0");
+var nugetPushFeedUrl = Argument("nugetPushFeedUrl", EnvironmentVariable("NuGet_Push_Feed_Url") ?? "");
+var nugetPushApiKey = Argument("nugetPushApiKey", EnvironmentVariable("NuGet_Push_Api_Key") ?? "");
 
 //////////////////////////////////////////////////////////////////////
 // GLOBALS
@@ -70,7 +70,12 @@ Task("Build and Publish Metrics Adapter Libraries")
 Task("Test SQL Adapter")
   .Does(() =>
 {
-  DotNetCoreTest("./InRule.Runtime.Metrics.SqlServer.IntegrationTests/InRule.Runtime.Metrics.SqlServer.IntegrationTests.csproj");
+  var settings = new DotNetCoreTestSettings
+  {
+    Logger = "console;verbosity=normal",
+  };
+
+  DotNetCoreTest("./InRule.Runtime.Metrics.SqlServer.IntegrationTests/InRule.Runtime.Metrics.SqlServer.IntegrationTests.csproj", settings);
 });
 
 Task("Create Metrics Adapter NuGet Packages")
