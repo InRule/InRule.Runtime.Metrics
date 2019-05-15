@@ -26,7 +26,11 @@ const string versionPrefixProperty = "VersionPrefix";
 Task("Clean")
   .Does(() =>
 {
-  DotNetCoreClean(solution);
+  try
+  {
+    DotNetCoreClean(solution);
+  }
+  catch { }
 
   try
   {
