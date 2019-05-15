@@ -35,8 +35,30 @@ namespace InRule.Runtime.Metrics.AzureTableStorage
             _table.ExecuteBatchAsync(batch).GetAwaiter().GetResult();
 	    }
 
-        private static TableBatchOperation CreateTableBatchOperation(string serviceId, string ruleApplicationName,
-            Guid sessionId, Metric[] metrics)
+		public static JToken GetMetricJsonValue(object value)
+		{
+			if (value == null) return null;
+
+			switch (value)
+			{
+				case long longValue:
+					return new JValue(longValue);
+				case bool boolValue:
+					return new JValue(boolValue);
+				case string stringValue:
+					return new JValue(stringValue);
+				case decimal decimalValue:
+					return new JValue(decimalValue);
+				default:
+					if (value is DateTime dateTimeValue)
+					{
+						return new JValue(dateTimeValue);
+					}
+					throw new NotSupportedException($"DataType {value.GetType().Name} not supported.");
+			}
+		}
+
+        private static TableBatchOperation CreateTableBatchOperation(string serviceId, string ruleApplicationName, Guid sessionId, Metric[] metrics)
         {
             var batch = new TableBatchOperation();
             foreach (Metric metric in metrics)
@@ -45,12 +67,11 @@ namespace InRule.Runtime.Metrics.AzureTableStorage
 
                 foreach (var metricProperty in metric.Schema.Properties)
                 {
-                    var value = metric[metricProperty];
-                    jObject.Add(metricProperty.Name, new JObject(value));
+                    object value = metric[metricProperty];
+                    jObject.Add(metricProperty.Name, GetMetricJsonValue(value));
                 }
 
-                batch.Add(TableOperation.Insert(new MetricEntity(serviceId, ruleApplicationName, sessionId.ToString(),
-                    metric.EntityId.Replace('/', '_'), metric.EntityName, jObject.ToString())));
+                batch.Add(TableOperation.Insert(new MetricEntity(serviceId, ruleApplicationName, sessionId.ToString(), metric.EntityId.Replace('/', '_'), metric.EntityName, jObject.ToString())));
             }
 
             return batch;
