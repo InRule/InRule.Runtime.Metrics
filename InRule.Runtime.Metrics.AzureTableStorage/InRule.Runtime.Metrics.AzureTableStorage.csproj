@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>InRule.Runtime.Metrics.AzureTableStorage</AssemblyName>
+    <SignAssembly>false</SignAssembly>
+    <AssemblyOriginatorKeyFile>KeyPair.snk</AssemblyOriginatorKeyFile>
+    <Authors>InRule Technology, Inc.</Authors>
+    <Company>InRule Technology, Inc.</Company>
+    <Description>An InRule® Metric logger for the InRule Rule Engine that can log to Microsoft Azure Table Storage.</Description>
+    <Copyright>Copyright 2019</Copyright>
+    <PackageProjectUrl>http://www.inrule.com</PackageProjectUrl>
+    <PackageIconUrl>http://www.inrule.com/globalassets/nuget-packages/inrule_basic_64_x_64.png</PackageIconUrl>
+    <PackageTags>InRule irSDK</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="InRule.Runtime" Version="5.4.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
+    <PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
+  </ItemGroup>
+
+</Project>
