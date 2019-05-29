@@ -8,6 +8,6 @@ In irAuthor, you can flag fields and select rules as a Metric. During execution,
 To handle the multitude of options for desired logging locations, InRule has implemented an adaptor based model. An adaptor is a .NET assembly that is available to the rule engine that implements the IMetricLogger interface. When this assembly exists, the engine will call out to the required methods in the assembly to perform the actual logging. This provides customers the ability to write metrics to any location that is required in their implementation.
  
 At the time of this writing, there are 3 adaptors that are available.
-• Azure Table Storage 
-• SQL Server
-• CSV (primarily for demo purposes)
+- Azure Table Storage 
+- SQL Server
+- CSV (primarily for demo purposes)
