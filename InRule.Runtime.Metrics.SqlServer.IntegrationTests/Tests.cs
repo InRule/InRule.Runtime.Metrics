@@ -8,25 +8,26 @@ using InRule.Repository.Classifications;
 using Microsoft.SqlServer.Management.Common;
 using Microsoft.SqlServer.Management.Smo;
 using NUnit.Framework;
+using NUnit.Framework.Internal;
 using DataType = InRule.Repository.DataType;
 
 namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
 {
-    public class Tests
+	[TestFixture]
+    public sealed class Tests
     {
         private const string ServerConnectionString = "Server=(localdb)\\MSSQLLocalDB;Integrated Security=true";
         private const string IntegrationTestDatabaseName = "MetricTesting";
 
-        private const string DatabaseConnectionString =
-            ServerConnectionString + ";Initial Catalog=" + IntegrationTestDatabaseName;
+        private const string DatabaseConnectionString = ServerConnectionString + ";Initial Catalog=" + IntegrationTestDatabaseName;
 
-        private static Table GetTable(RuleApplicationDef ruleAppDef, EntityDef entity1Def)
+        private static Table GetTable(RuleApplicationDef ruleAppDef, string name)
         {
             var sqlConnection = new SqlConnection(ServerConnectionString);
             var server = new Server(new ServerConnection(sqlConnection));
 
             var database = server.Databases[IntegrationTestDatabaseName];
-            var table = database.Tables[entity1Def.Name, ruleAppDef.Name];
+            var table = database.Tables[name, ruleAppDef.Name];
 
             return table;
         }
@@ -189,8 +190,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         [TestCase(DataType.Date, "#2019-01-02#", SqlDataType.DateTime)]
         [TestCase(DataType.DateTime, "#2019-01-02T01:02:03#", SqlDataType.DateTime)]
         [TestCase(DataType.String, "\"Test\"", SqlDataType.NVarCharMax)]
-        public void MetricDataTypes_CreatesCorrectSqlDataTypes(DataType dataType, string defaultValue,
-            SqlDataType sqlDataType)
+        public void MetricDataTypes_CreatesCorrectSqlDataTypes(DataType dataType, string defaultValue, SqlDataType sqlDataType)
         {
             var ruleAppDef = new RuleApplicationDef("TestRuleApplication");
             var entity1Def = ruleAppDef.AddEntity("Entity1");
@@ -207,7 +207,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
                 session.ApplyRules();
             }
 
-            var table = GetTable(ruleAppDef, entity1Def);
+            var table = GetTable(ruleAppDef, entity1Def.Name);
             var column = table.Columns[field1Def.Name + "_" + dataType];
 
             Assert.That(column.DataType.SqlDataType, Is.EqualTo(sqlDataType));
@@ -219,8 +219,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         [TestCase(DataType.Date, "#2019-01-02#", SqlDataType.DateTime)]
         [TestCase(DataType.DateTime, "#2019-01-02T01:02:03#", SqlDataType.DateTime)]
         [TestCase(DataType.String, "\"Test\"", SqlDataType.NVarCharMax)]
-        public async Task MetricDataTypes_CreatesCorrectSqlDataTypes_Async(DataType dataType, string defaultValue,
-            SqlDataType sqlDataType)
+        public async Task MetricDataTypes_CreatesCorrectSqlDataTypes_Async(DataType dataType, string defaultValue, SqlDataType sqlDataType)
         {
             var ruleAppDef = new RuleApplicationDef("TestRuleApplication");
             var entity1Def = ruleAppDef.AddEntity("Entity1");
@@ -237,7 +236,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
                 await session.ApplyRulesAsync();
             }
 
-            var table = GetTable(ruleAppDef, entity1Def);
+            var table = GetTable(ruleAppDef, entity1Def.Name);
             var column = table.Columns[field1Def.Name + "_" + dataType];
 
             Assert.That(column.DataType.SqlDataType, Is.EqualTo(sqlDataType));
@@ -261,7 +260,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
                 session.ApplyRules();
             }
 
-            var table = GetTable(ruleAppDef, entity1Def);
+            var table = GetTable(ruleAppDef, entity1Def.Name);
             var column = table.Columns[field1Def.Name + "_" + DataType.Integer];
 
             Assert.That(column.DataType.SqlDataType, Is.EqualTo(SqlDataType.Int));
@@ -302,7 +301,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
                 session.ApplyRules();
             }
 
-            var table = GetTable(ruleAppDef, entity1Def);
+            var table = GetTable(ruleAppDef, entity1Def.Name);
             var column = table.Columns[$"{field1Def.Name}_{DataType.Integer}"];
 
             Assert.That(column.DataType.SqlDataType, Is.EqualTo(SqlDataType.Int));
@@ -383,5 +382,89 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
                 }
             }
         }
-    }
+
+		[Test]
+		public void ComplexField_CreatesValidTableName()
+		{
+			var ra = new RuleApplicationDef();
+			var e1Def = ra.AddEntity("e1");
+			var cf1Def = e1Def.AddComplexField("cf1");
+			var f1Def = cf1Def.AddCalcField("f1", DataType.Integer, "123");
+			f1Def.IsMetric = true;
+
+			var metricLogger = new MetricLogger(DatabaseConnectionString);
+
+			using (RuleSession session = new RuleSession(ra))
+			{
+				session.Settings.MetricLogger = metricLogger;
+				session.Settings.MetricServiceName = "Integration Tests";
+
+				session.CreateEntity(e1Def.Name);
+
+				session.ApplyRules();
+			}
+
+			string expectedTableName = $"{e1Def.Name}/{cf1Def.Name}";
+
+			var table = GetTable(ra, expectedTableName);
+			Assert.That(table, Is.Not.Null);
+			Assert.That(table.Name, Is.EqualTo(expectedTableName));
+
+			using (var connection = new SqlConnection(DatabaseConnectionString))
+			using (var command = new SqlCommand())
+			{
+				var sql = $"SELECT {f1Def.Name}_{f1Def.DataType} FROM [{ra.Name}].[{expectedTableName}]";
+				command.CommandText = sql;
+				command.Connection = connection;
+				connection.Open();
+				var metricValue = command.ExecuteScalar();
+
+				Assert.That(metricValue, Is.EqualTo(123));
+			}
+		}
+
+		[Test]
+		public void ComplexCollection_CreatesValidTableName()
+		{
+			var ra = new RuleApplicationDef();
+			var e1Def = ra.AddEntity("e1");
+			var cf1Def = e1Def.AddComplexField("cf1");
+			var cc1Def = cf1Def.AddComplexCollection("cc1");
+			var f1Def = cc1Def.AddCalcField("f1", DataType.Integer, "123");
+			f1Def.IsMetric = true;
+
+			var metricLogger = new MetricLogger(DatabaseConnectionString);
+
+			using (RuleSession session = new RuleSession(ra))
+			{
+				session.Settings.MetricLogger = metricLogger;
+				session.Settings.MetricServiceName = "Integration Tests";
+
+				var e1 = session.CreateEntity(e1Def.Name);
+				var cf1 = e1.Fields[cf1Def.Name];
+				var cc1 = cf1.Collections[cc1Def.Name];
+				cc1.Add();
+
+				session.ApplyRules();
+			}
+
+			string expectedTableName = $"{e1Def.Name}/{cf1Def.Name}/{cc1Def.Name}";
+
+			var table = GetTable(ra, expectedTableName);
+			Assert.That(table, Is.Not.Null);
+			Assert.That(table.Name, Is.EqualTo(expectedTableName));
+
+			using (var connection = new SqlConnection(DatabaseConnectionString))
+			using (var command = new SqlCommand())
+			{
+				var sql = $"SELECT {f1Def.Name}_{f1Def.DataType} FROM [{ra.Name}].[{expectedTableName}]";
+				command.CommandText = sql;
+				command.Connection = connection;
+				connection.Open();
+				var metricValue = command.ExecuteScalar();
+
+				Assert.That(metricValue, Is.EqualTo(123));
+			}
+		}
+	}
 }
