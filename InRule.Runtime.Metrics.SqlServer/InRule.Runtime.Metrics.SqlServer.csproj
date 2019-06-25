@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="dbup-sqlserver" Version="4.2.0" />
-    <PackageReference Include="InRule.Runtime" Version="5.4.0" />
+    <PackageReference Include="InRule.Runtime" Version="5.4.1" />
     <PackageReference Include="LibLog" Version="5.0.6">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

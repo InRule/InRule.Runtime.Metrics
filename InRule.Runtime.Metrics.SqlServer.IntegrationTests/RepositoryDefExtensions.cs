@@ -13,14 +13,14 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
             return entityDef;
         }
 
-        public static FieldDef AddField(this EntityDef entityDef, string name, DataType dataType, string defaultValue)
+        public static FieldDef AddField(this IContainsFields entityDef, string name, DataType dataType, string defaultValue)
         {
             var field = AddField(entityDef, name, dataType);
             field.DefaultValue = defaultValue;
             return field;
         }
 
-        public static FieldDef AddField(this EntityDef entityDef, string name, DataType dataType)
+        public static FieldDef AddField(this IContainsFields entityDef, string name, DataType dataType)
         {
             return entityDef.Fields.AddField(name, dataType);
         }
@@ -34,23 +34,16 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
 
         
 
-        public static FieldDef AddCalcField(this FieldDefCollection fields, string name, DataType dataType,
-            string expression)
+        public static FieldDef AddCalcField(this IContainsFields container, string name, DataType dataType, string expression)
         {
-            var fieldDef = new FieldDef(name, dataType);
-            fieldDef.IsCalculated = true;
+            var fieldDef = container.AddField(name, dataType);
+			fieldDef.IsCalculated = true;
             fieldDef.Calc.FormulaText = expression;
-            fields.Add(fieldDef);
             return fieldDef;
         }
 
-        public static FieldDef AddCalcField(this EntityDef entityDef, string name, DataType dataType, string expression)
-        {
-            return entityDef.Fields.AddCalcField(name, dataType, expression);
-        }
-
-     
-        public static FieldDef AddEntityCollection(this FieldDefCollection fields, string name, string memberEntityName)
+    
+        public static FieldDef AddEntityCollection(this IContainsFields fields, string name, string memberEntityName)
         {
             var fieldDef = fields.AddField(name, DataType.Entity);
             fieldDef.IsCollection = true;
@@ -58,12 +51,20 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
             return fieldDef;
         }
 
-        public static FieldDef AddEntityCollection(this EntityDef entityDef, string name, string memberEntityName)
-        {
-            return entityDef.Fields.AddEntityCollection(name, memberEntityName);
-        }
+		public static FieldDef AddComplexField(this IContainsFields fields, string name)
+		{
+			var fieldDef = fields.AddField(name, DataType.Complex);
+			return fieldDef;
+		}
 
-        public static AddCollectionMemberActionDef AddAddCollectionMemberAction(this SimpleRuleDef simpleRuleDef,
+		public static FieldDef AddComplexCollection(this IContainsFields fields, string name)
+		{
+			var fieldDef = fields.AddField(name, DataType.Complex);
+			fieldDef.IsCollection = true;
+			return fieldDef;
+		}
+
+		public static AddCollectionMemberActionDef AddAddCollectionMemberAction(this SimpleRuleDef simpleRuleDef,
             string name, string collectionName, params NameExpressionPairDef[] memberValues)
         {
             return simpleRuleDef.SubRules.AddAddCollectionMemberAction(name, collectionName, memberValues);
