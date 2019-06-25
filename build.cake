@@ -141,10 +141,10 @@ Task("Publish to NuGet Feed")
 
 Task("Set CI Build")
   .Does(()=>
-  {
-    isCiBuild = true;
-  });
-  
+{
+  isCiBuild = true;
+});
+
 
 //////////////////////////////////////////////////////////////////////
 // TASK TARGETS
