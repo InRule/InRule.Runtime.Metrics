@@ -9,15 +9,8 @@ var versionSuffix = Argument("versionSuffix", EnvironmentVariable("Version_Suffi
 var nugetPushFeedUrl = Argument("nugetPushFeedUrl", EnvironmentVariable("NuGet_Push_Feed_Url") ?? "");
 var nugetPushApiKey = Argument("nugetPushApiKey", EnvironmentVariable("NuGet_Push_Api_Key") ?? "");
 
-bool isPrereleasePackage = false;
-if (HasArgument("isPrereleasePackage"))
-{
-  isPrereleasePackage = Argument<bool>("isPrereleasePackage");
-}
-else if (EnvironmentVariable("Is_Prerelease_Package") != null)
-{
-  isPrereleasePackage = Boolean.Parse(EnvironmentVariable("Is_Prerelease_Package"));
-}
+var isPrereleasePackageData = Argument("isPrereleasePackage", EnvironmentVariable("Is_Prerelease_Package") ?? "false");
+bool isPrereleasePackage = Boolean.Parse(isPrereleasePackageData);
 
 //////////////////////////////////////////////////////////////////////
 // GLOBALS
