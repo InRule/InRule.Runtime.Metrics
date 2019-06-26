@@ -9,6 +9,16 @@ var versionSuffix = Argument("versionSuffix", EnvironmentVariable("Version_Suffi
 var nugetPushFeedUrl = Argument("nugetPushFeedUrl", EnvironmentVariable("NuGet_Push_Feed_Url") ?? "");
 var nugetPushApiKey = Argument("nugetPushApiKey", EnvironmentVariable("NuGet_Push_Api_Key") ?? "");
 
+bool isPrereleasePackage = false;
+if (HasArgument("isPrereleasePackage"))
+{
+  isPrereleasePackage = Argument<bool>("isPrereleasePackage");
+}
+else if (EnvironmentVariable("Is_Prerelease_Package") != null)
+{
+  isPrereleasePackage = Boolean.Parse(EnvironmentVariable("Is_Prerelease_Package"));
+}
+
 //////////////////////////////////////////////////////////////////////
 // GLOBALS
 //////////////////////////////////////////////////////////////////////
@@ -18,8 +28,6 @@ const string nuGetOrgUrl = "https://api.nuget.org/v3/index.json";
 const string nugetPackagesFolder = "./NuGetPackages";
 const string releaseConfiguration = "Release";
 const string versionPrefixProperty = "VersionPrefix";
-
-var isCiBuild = false;
 
 //////////////////////////////////////////////////////////////////////
 // TASKS
@@ -57,7 +65,7 @@ Task("Restore .NET Dependencies")
         Warning("{0} added as an additional NuGet feed.", nuGetSource);
         sources.Add(nuGetSource);
     }
-    
+
     sources.Add(nuGetOrgUrl);
   }
   else
@@ -103,7 +111,7 @@ Task("Create Metrics Adapter NuGet Packages")
     OutputDirectory = nugetPackagesFolder,
   };
 
-  if(isCiBuild)
+  if(isPrereleasePackage)
   {
     settings.VersionSuffix = versionSuffix;
     settings.MSBuildSettings = new DotNetCoreMSBuildSettings().WithProperty(versionPrefixProperty, versionPrefix);
@@ -139,13 +147,6 @@ Task("Publish to NuGet Feed")
   DotNetCoreNuGetPush("*.nupkg", settings);
 });
 
-Task("Set CI Build")
-  .Does(()=>
-{
-  isCiBuild = true;
-});
-
-
 //////////////////////////////////////////////////////////////////////
 // TASK TARGETS
 //////////////////////////////////////////////////////////////////////
@@ -158,15 +159,6 @@ Task("Local")
     .IsDependentOn("Create Metrics Adapter NuGet Packages");
 
 Task("Publish")
-    .IsDependentOn("Clean")
-    .IsDependentOn("Restore .NET Dependencies")
-    .IsDependentOn("Build and Publish Metrics Adapter Libraries")
-    .IsDependentOn("Test SQL Adapter")
-    .IsDependentOn("Create Metrics Adapter NuGet Packages")
-    .IsDependentOn("Publish to NuGet Feed");
-
-Task("CI")
-    .IsDependentOn("Set CI Build")
     .IsDependentOn("Clean")
     .IsDependentOn("Restore .NET Dependencies")
     .IsDependentOn("Build and Publish Metrics Adapter Libraries")
