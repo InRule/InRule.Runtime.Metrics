@@ -17,7 +17,10 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
     public sealed class Tests
     {
         private const string ServerConnectionString = "Server=(localdb)\\MSSQLLocalDB;Integrated Security=true";
+        //private const string ServerConnectionString = "Server=tcp:ehmetricstest.database.windows.net,1433;Initial Catalog=ehmetricstest;Persist Security Info=False;User ID=ehertlein;Password=password.9;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
         private const string IntegrationTestDatabaseName = "MetricTesting";
+        //private const string IntegrationTestDatabaseName = "ehmetricstest";
 
         private const string DatabaseConnectionString = ServerConnectionString + ";Initial Catalog=" + IntegrationTestDatabaseName;
 
