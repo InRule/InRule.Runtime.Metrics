@@ -4,7 +4,7 @@
 
 var target = Argument("target", "Local");
 var nugetSourceFeedUrl = Argument("nugetSourceFeedUrl", EnvironmentVariable("NuGet_Source_Feed_Url") ?? "");
-var versionPrefix = Argument("versionPrefix", EnvironmentVariable("Version_Prefix") ?? "5.4.0");
+var versionPrefix = Argument("versionPrefix", EnvironmentVariable("Version_Prefix") ?? "1.0.0");
 var versionSuffix = Argument("versionSuffix", EnvironmentVariable("Version_Suffix") ?? "0");
 var nugetPushFeedUrl = Argument("nugetPushFeedUrl", EnvironmentVariable("NuGet_Push_Feed_Url") ?? "");
 var nugetPushApiKey = Argument("nugetPushApiKey", EnvironmentVariable("NuGet_Push_Api_Key") ?? "");
