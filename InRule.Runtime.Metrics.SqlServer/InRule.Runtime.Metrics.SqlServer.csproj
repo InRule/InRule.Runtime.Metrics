@@ -11,7 +11,7 @@
     <PackageIconUrl>http://www.inrule.com/globalassets/nuget-packages/inrule_basic_64_x_64.png</PackageIconUrl>
     <RepositoryUrl></RepositoryUrl>
     <PackageTags>InRule irSDK</PackageTags>
-    <license type="expression">MIT</license>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
