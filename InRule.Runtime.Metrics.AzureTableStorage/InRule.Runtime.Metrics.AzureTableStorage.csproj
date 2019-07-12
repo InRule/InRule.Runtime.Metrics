@@ -12,7 +12,7 @@
     <PackageProjectUrl>http://www.inrule.com</PackageProjectUrl>
     <PackageIconUrl>http://www.inrule.com/globalassets/nuget-packages/inrule_basic_64_x_64.png</PackageIconUrl>
     <PackageTags>InRule irSDK</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- <PackageLicenseExpression>MIT</PackageLicenseExpression> -->
   </PropertyGroup>
 
   <ItemGroup>
