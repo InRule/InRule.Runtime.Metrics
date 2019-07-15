@@ -1,4 +1,4 @@
-InRule® Metric logger for the InRule Rule Engine that can log to Microsoft SQL Server. Currently does not support Microsoft Azure SQL Database.
+InRule® Metric logger for the InRule Rule Engine that can log to Microsoft SQL Server.
 
 **Configuring via code:**
 ```c#
@@ -11,6 +11,7 @@ using (var session = new RuleSession(ruleApplicationDef))
     session.ApplyRules();
 }
 ```
+
 **Configuring via custom config section:**
 ```xml
 <configuration>
