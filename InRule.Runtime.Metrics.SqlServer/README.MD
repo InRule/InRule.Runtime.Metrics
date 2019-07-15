@@ -5,7 +5,7 @@ InRule® Metric logger for the InRule Rule Engine that can log to Microsoft SQL 
 using (var session = new RuleSession(ruleApplicationDef))
 {
     session.Settings.MetricLogger = new MetricLogger(DatabaseConnectionString);
-    session.Settings.MetricLoggerName = "Development"; //Optional name
+    session.Settings.MetricServiceName = "Development"; //Optional name
     
     session.CreateEntity(e1Def.Name);
     session.ApplyRules();
