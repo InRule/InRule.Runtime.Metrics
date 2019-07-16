@@ -80,6 +80,18 @@ Task("Build and Publish Metrics Adapter Libraries")
     MSBuildSettings = new DotNetCoreMSBuildSettings().WithProperty(versionPrefixProperty, versionPrefix),
   };
 
+  Warning("Publishing for netstandard2.0");
+  settings.Framework = "netstandard2.0";
+  FilePathCollection netStandardProjectFiles = GetFiles("./**/*.csproj");
+  netStandardProjectFiles.Remove(GetFiles("./**/*Tests.csproj"));
+  netStandardProjectFiles.Remove(GetFiles("./Samples/**/*.csproj"));
+  foreach (FilePath file in netStandardProjectFiles)
+  {
+    DotNetCorePublish(file.ToString(), settings);
+  }
+
+  Warning("Publishing for net461");
+  settings.Framework = "net461";
   DotNetCorePublish(solution, settings);
 });
 
