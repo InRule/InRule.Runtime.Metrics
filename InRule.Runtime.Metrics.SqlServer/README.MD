@@ -5,15 +5,17 @@ InRule® Metric logger for the InRule Rule Engine that can log to Microsoft SQL 
 using (var session = new RuleSession(ruleApplicationDef))
 {
     session.Settings.MetricLogger = new MetricLogger(DatabaseConnectionString);
-    session.Settings.MetricLoggerName = "Development"; //Optional name
+    session.Settings.MetricServiceName = "Development"; //Optional name
     
     session.CreateEntity(e1Def.Name);
     session.ApplyRules();
 }
 ```
+
 **Configuring via custom config section:**
 ```xml
 <configuration>
+
   <configSections>
     <section name="inrule.runtime" type="InRule.Runtime.Configuration.RuntimeConfigSectionHandler, InRule.Runtime" />
   </configSections>
@@ -31,6 +33,24 @@ using (var session = new RuleSession(ruleApplicationDef))
                 metricLoggerTypeName="InRule.Runtime.Metrics.SqlServer.MetricLogger" 
                 metricLoggerServiceName="Development"/> <!-- Optional Name -->
   </inrule.runtime>
+
+  <runtime>
+    <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+      <dependentAssembly>
+        <assemblyIdentity name="Newtonsoft.Json" publicKeyToken="30ad4fe6b2a6aeed" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-12.0.0.0" newVersion="12.0.0.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="Microsoft.SqlServer.Smo" publicKeyToken="89845dcd8080cc91" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-14.100.0.0" newVersion="14.100.0.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="Microsoft.SqlServer.ConnectionInfo" publicKeyToken="89845dcd8080cc91" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-14.100.0.0" newVersion="14.100.0.0" />
+      </dependentAssembly>
+    </assemblyBinding>
+  </runtime>
+
 </configuration>
 ```
 

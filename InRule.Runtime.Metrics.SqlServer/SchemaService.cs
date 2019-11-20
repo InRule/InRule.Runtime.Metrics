@@ -13,6 +13,13 @@ namespace InRule.Runtime.Metrics.SqlServer
 {
     internal class SchemaService : IDisposable
     {
+        private enum SchemaStatus
+        {
+            Unchanged,
+            New,
+            Changed,
+        }
+
         private readonly Dictionary<Type, Microsoft.SqlServer.Management.Smo.DataType> _frameworkTypeToSmoTypeMap = new Dictionary<Type, Microsoft.SqlServer.Management.Smo.DataType>
         {
             {typeof(string), Microsoft.SqlServer.Management.Smo.DataType.NVarCharMax},
@@ -62,7 +69,7 @@ namespace InRule.Runtime.Metrics.SqlServer
                 {
                     _connection = new SqlConnection(_connectionString);
                 }
-                
+
                 return _connection;
             }
         }
@@ -85,14 +92,22 @@ namespace InRule.Runtime.Metrics.SqlServer
         {
             using (Connection)
             {
-                if (!HasSchemaChanged(ruleApplicationName, tableName, metricSchema))
+                var metricSchemaKey = new MetricSchemaKey(ruleApplicationName, tableName, metricSchema);
+                if (_ruleAppEntityToSchemaHashMap.Contains(metricSchemaKey))
+                {
+                    //seen this schema before in this session;
+                    return;
+                }
+
+                var schemaStatus = GetSchemaStatus(ruleApplicationName, tableName, metricSchema);
+                if (schemaStatus == SchemaStatus.Unchanged)
                     return;
 
                 Log.Info("Schema has changed");
 
                 try
                 {
-                    var server = new Server(new ServerConnection(Connection));
+                    var server = new Server(new ServerConnection(new SqlConnection(_connectionString)));
                     var database = server.Databases[Connection.Database];
                     var schema = GetOrAddSchema(ruleApplicationName, database);
                     var table = GetOrAddTable(database, schema.Name, tableName);
@@ -101,6 +116,11 @@ namespace InRule.Runtime.Metrics.SqlServer
                     {
                         GetOrAddColumn(metricProperty, table);
                     }
+
+                    SerializeSchemaToDbCache(ruleApplicationName, tableName, metricSchema.GetJson(), schemaStatus);
+
+                    _ruleAppEntityToSchemaHashMap.Add(metricSchemaKey);
+
                 }
                 catch (Exception e)
                 {
@@ -152,17 +172,8 @@ namespace InRule.Runtime.Metrics.SqlServer
             return table;
         }
 
-        private bool HasSchemaChanged(string ruleAppName, string entityName, MetricSchema newMetricSchema)
-        {
-            var metricSchemaKey = new MetricSchemaKey(ruleAppName, entityName, newMetricSchema);
-            if (_ruleAppEntityToSchemaHashMap.Contains(metricSchemaKey))
-            {
-                //seen this schema before in this session;
-                return false;
-            }
-            
-            _ruleAppEntityToSchemaHashMap.Add(metricSchemaKey);
-
+        private SchemaStatus GetSchemaStatus(string ruleAppName, string entityName, MetricSchema newMetricSchema)
+        {            
             if(Connection.State != ConnectionState.Open)
                 Connection.Open();
 
@@ -176,26 +187,23 @@ namespace InRule.Runtime.Metrics.SqlServer
             var metricJson = command.ExecuteScalar()?.ToString();
             if (metricJson == null)
             {
-                SerializeSchemaToDbCache(ruleAppName, entityName, newMetricSchema.GetJson(), true);
-                return true;
+                return SchemaStatus.New;
             }
             
             var oldSchema = MetricSchema.FromJson(new StringReader(metricJson));
 
             if (oldSchema.GetHashCode() == newMetricSchema.GetHashCode() && oldSchema.Equals(newMetricSchema))
             {
-                return false;
+                return SchemaStatus.Unchanged;
             }
 
-            SerializeSchemaToDbCache(ruleAppName, entityName, newMetricSchema.GetJson(), false);
-
-            return true;
+            return SchemaStatus.Changed;
 
         }
 
-        private void SerializeSchemaToDbCache(string ruleAppName, string entityName, string metricJson, bool isNew)
+        private void SerializeSchemaToDbCache(string ruleAppName, string entityName, string metricJson, SchemaStatus schemaStatus)
         {
-            var storageSql = isNew 
+            var storageSql = schemaStatus == SchemaStatus.New 
                 ? "INSERT INTO MetricSchemaStore (RuleAppName, EntityName, MetricSchema) VALUES(@RuleAppName,@EntityName, @MetricSchema)" 
                 : "UPDATE MetricSchemaStore SET MetricSchema = @MetricSchema where RuleAppName = @RuleAppName AND EntityName = @EntityName";
 
