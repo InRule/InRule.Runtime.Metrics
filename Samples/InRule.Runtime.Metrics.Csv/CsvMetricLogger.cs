@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Linq;
@@ -17,7 +16,7 @@ namespace InRule.Runtime.Metrics.Csv
 			foreach (var metricGroup in metrics.GroupBy(metric => metric.EntityName))
 			{
 				// save them to disk in a csv file per Entity
-				string filePath = $"{ConfigurationManager.AppSettings["OutputDirectory"]}{metricGroup.Key}.csv";
+				string filePath = $"{ConfigurationManager.AppSettings["OutputDirectory"]}{metricGroup.Key.Replace('/', '+')}.csv";
 
 				using (FileStream stream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.None))
 				using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
@@ -43,7 +42,7 @@ namespace InRule.Runtime.Metrics.Csv
 			foreach (var metricGroup in metrics.GroupBy(metric => metric.EntityName))
 			{
 				// save them to disk in a csv file per Entity
-				string filePath = $"{ConfigurationManager.AppSettings["OutputDirectory"]}{metricGroup.Key}.csv";
+				string filePath = $"{ConfigurationManager.AppSettings["OutputDirectory"]}{metricGroup.Key.Replace('/', '+')}.csv";
 
 				using (FileStream stream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.None))
 				using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))

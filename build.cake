@@ -4,10 +4,13 @@
 
 var target = Argument("target", "Local");
 var nugetSourceFeedUrl = Argument("nugetSourceFeedUrl", EnvironmentVariable("NuGet_Source_Feed_Url") ?? "");
-var versionPrefix = Argument("versionPrefix", EnvironmentVariable("Version_Prefix") ?? "5.4.0");
+var versionPrefix = Argument("versionPrefix", EnvironmentVariable("Version_Prefix") ?? "1.0.0");
 var versionSuffix = Argument("versionSuffix", EnvironmentVariable("Version_Suffix") ?? "0");
 var nugetPushFeedUrl = Argument("nugetPushFeedUrl", EnvironmentVariable("NuGet_Push_Feed_Url") ?? "");
 var nugetPushApiKey = Argument("nugetPushApiKey", EnvironmentVariable("NuGet_Push_Api_Key") ?? "");
+
+var isPrereleasePackageData = Argument("isPrereleasePackage", EnvironmentVariable("Is_Prerelease_Package") ?? "false");
+bool isPrereleasePackage = Boolean.Parse(isPrereleasePackageData);
 
 //////////////////////////////////////////////////////////////////////
 // GLOBALS
@@ -18,8 +21,6 @@ const string nuGetOrgUrl = "https://api.nuget.org/v3/index.json";
 const string nugetPackagesFolder = "./NuGetPackages";
 const string releaseConfiguration = "Release";
 const string versionPrefixProperty = "VersionPrefix";
-
-var isCiBuild = false;
 
 //////////////////////////////////////////////////////////////////////
 // TASKS
@@ -57,7 +58,7 @@ Task("Restore .NET Dependencies")
         Warning("{0} added as an additional NuGet feed.", nuGetSource);
         sources.Add(nuGetSource);
     }
-    
+
     sources.Add(nuGetOrgUrl);
   }
   else
@@ -79,6 +80,18 @@ Task("Build and Publish Metrics Adapter Libraries")
     MSBuildSettings = new DotNetCoreMSBuildSettings().WithProperty(versionPrefixProperty, versionPrefix),
   };
 
+  Warning("Publishing for netstandard2.0");
+  settings.Framework = "netstandard2.0";
+  FilePathCollection netStandardProjectFiles = GetFiles("./**/*.csproj");
+  netStandardProjectFiles.Remove(GetFiles("./**/*Tests.csproj"));
+  netStandardProjectFiles.Remove(GetFiles("./Samples/**/*.csproj"));
+  foreach (FilePath file in netStandardProjectFiles)
+  {
+    DotNetCorePublish(file.ToString(), settings);
+  }
+
+  Warning("Publishing for net461");
+  settings.Framework = "net461";
   DotNetCorePublish(solution, settings);
 });
 
@@ -103,7 +116,7 @@ Task("Create Metrics Adapter NuGet Packages")
     OutputDirectory = nugetPackagesFolder,
   };
 
-  if(isCiBuild)
+  if(isPrereleasePackage)
   {
     settings.VersionSuffix = versionSuffix;
     settings.MSBuildSettings = new DotNetCoreMSBuildSettings().WithProperty(versionPrefixProperty, versionPrefix);
@@ -139,13 +152,6 @@ Task("Publish to NuGet Feed")
   DotNetCoreNuGetPush("*.nupkg", settings);
 });
 
-Task("Set CI Build")
-  .Does(()=>
-  {
-    isCiBuild = true;
-  });
-  
-
 //////////////////////////////////////////////////////////////////////
 // TASK TARGETS
 //////////////////////////////////////////////////////////////////////
@@ -158,15 +164,6 @@ Task("Local")
     .IsDependentOn("Create Metrics Adapter NuGet Packages");
 
 Task("Publish")
-    .IsDependentOn("Clean")
-    .IsDependentOn("Restore .NET Dependencies")
-    .IsDependentOn("Build and Publish Metrics Adapter Libraries")
-    .IsDependentOn("Test SQL Adapter")
-    .IsDependentOn("Create Metrics Adapter NuGet Packages")
-    .IsDependentOn("Publish to NuGet Feed");
-
-Task("CI")
-    .IsDependentOn("Set CI Build")
     .IsDependentOn("Clean")
     .IsDependentOn("Restore .NET Dependencies")
     .IsDependentOn("Build and Publish Metrics Adapter Libraries")

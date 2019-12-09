@@ -1,4 +1,3 @@
-next-version: 5.4.0
 assembly-versioning-scheme: MajorMinorPatch
 mode: ContinuousDelivery
 tag-prefix: release-
@@ -10,4 +9,4 @@ branches:
     tag: useBranchName
     increment: Patch
 ignore:
-  sha: []
+  commits-before: 2019-06-30T00:00:00

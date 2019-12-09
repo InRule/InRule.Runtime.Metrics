@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <AssemblyName>InRule.Runtime.Metrics.AzureTableStorage</AssemblyName>
     <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>KeyPair.snk</AssemblyOriginatorKeyFile>
@@ -12,6 +12,7 @@
     <PackageProjectUrl>http://www.inrule.com</PackageProjectUrl>
     <PackageIconUrl>http://www.inrule.com/globalassets/nuget-packages/inrule_basic_64_x_64.png</PackageIconUrl>
     <PackageTags>InRule irSDK</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
