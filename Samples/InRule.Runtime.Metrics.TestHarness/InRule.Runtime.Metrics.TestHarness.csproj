@@ -36,16 +36,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="InRule.Common, Version=5.5.1.222, Culture=neutral, PublicKeyToken=1feb8dd25b1ceb6b, processorArchitecture=MSIL">
+    <Reference Include="InRule.Common, Version=5.5.1.225, Culture=neutral, PublicKeyToken=1feb8dd25b1ceb6b, processorArchitecture=MSIL">
       <HintPath>..\packages\InRule.Common.5.5.1\lib\net461\InRule.Common.dll</HintPath>
     </Reference>
-    <Reference Include="InRule.Repository, Version=5.5.1.222, Culture=neutral, PublicKeyToken=1feb8dd25b1ceb6b, processorArchitecture=MSIL">
+    <Reference Include="InRule.Repository, Version=5.5.1.225, Culture=neutral, PublicKeyToken=1feb8dd25b1ceb6b, processorArchitecture=MSIL">
       <HintPath>..\packages\InRule.Repository.5.5.1\lib\net461\InRule.Repository.dll</HintPath>
     </Reference>
-    <Reference Include="InRule.Repository.XmlSerializers, Version=5.5.1.222, Culture=neutral, PublicKeyToken=1feb8dd25b1ceb6b, processorArchitecture=MSIL">
+    <Reference Include="InRule.Repository.XmlSerializers, Version=5.5.1.225, Culture=neutral, PublicKeyToken=1feb8dd25b1ceb6b, processorArchitecture=MSIL">
       <HintPath>..\packages\InRule.Repository.5.5.1\lib\net461\InRule.Repository.XmlSerializers.dll</HintPath>
     </Reference>
-    <Reference Include="InRule.Runtime, Version=5.5.1.222, Culture=neutral, PublicKeyToken=1feb8dd25b1ceb6b, processorArchitecture=MSIL">
+    <Reference Include="InRule.Runtime, Version=5.5.1.225, Culture=neutral, PublicKeyToken=1feb8dd25b1ceb6b, processorArchitecture=MSIL">
       <HintPath>..\packages\InRule.Runtime.5.5.1\lib\net461\InRule.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
