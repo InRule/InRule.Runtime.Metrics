@@ -90,8 +90,8 @@ Task("Build and Publish Metrics Adapter Libraries")
     DotNetCorePublish(file.ToString(), settings);
   }
 
-  Warning("Publishing for net461");
-  settings.Framework = "net461";
+  Warning("Publishing for net472");
+  settings.Framework = "net472";
   DotNetCorePublish(solution, settings);
 });
 
