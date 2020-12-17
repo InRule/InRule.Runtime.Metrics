@@ -1,14 +1,14 @@
 # InRule.Runtime.Metrics
 
-InRule Metrics provides the ability to log field and rule values directly from the engine to a data store of your choosing. This information is valuable to see how rules are performing over time. They can be thought of as the Key Performance Indicators (KPI’s) that want to be tracked during rule execution. 
+With InRule Metrics, enterprises can track field values, execution frequency, evaluated criteria, and results to improve declarative logic and deliver better business outcomes. 
+The adapter-based model allows users to write data to various storage targets including Azure Table Storage, SQL Server, or a CSV file.  This logged information is valuable to understand how rules are performing over time and can be used to measure decision automation KPIs.
  
 How it works:
+In irAuthor, users flag fields and certain rule types as metrics. During execution, the engine will collect the field or rule name and its value. The engine will then output the selected metrics to a logger. Values are output and organized according to the data structure established in the rule application. For example, if the Product and Total fields are flagged as metrics on an Invoice entity, the rule engine will output a metric for Invoice with the name and values for Product and Total.
 
-In irAuthor, you can flag fields and select rules as a Metric. During execution, the engine will collect the field or rule name as well as the value of each. The engine will then emit the metrics to a Metric Logger (discussed below). Metrics are emitted on a per entity basis, meaning all the fields and rules will be emitted in the context of it’s entity. For example, if the Product and Total field are flagged as metrics on the Invoice entity, the rule engine will emit an Invoice metric, with the name and values for Product and Total.
- 
-To handle the multitude of options for desired logging locations, InRule has implemented an adaptor based model. An adaptor is a .NET assembly that is available to the rule engine that implements the IMetricLogger interface. When this assembly exists, the engine will call out to the required methods in the assembly to perform the actual logging. This provides customers the ability to write metrics to any location that is required in their implementation.
- 
-At the time of this writing, there are 3 adaptors that are available.
+The adapter model for InRule Metrics is a .NET assembly made available to the rule engine that implements the IMetricLogger interface. When this assembly exists, the engine will call out to the required methods in the assembly to perform logging. This enables users to write metrics to the location desired for their implementation.
+
+Currently, there are three available adapters:
 - Azure Table Storage 
 - SQL Server
-- CSV (primarily for demo purposes)
+- CSV
