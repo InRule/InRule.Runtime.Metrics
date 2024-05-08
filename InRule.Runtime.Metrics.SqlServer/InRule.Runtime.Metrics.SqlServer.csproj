@@ -5,7 +5,7 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Authors>InRule Technology, Inc.</Authors>
     <Company>InRule Technology, Inc.</Company>
-    <Copyright>Copyright 2022</Copyright>
+    <Copyright>Copyright 2024</Copyright>
     <Description>An InRule® Metric logger for the InRule Rule Engine that can log to Microsoft SQL Server.</Description>
     <PackageProjectUrl>http://www.inrule.com</PackageProjectUrl>
     <PackageIconUrl>http://www.inrule.com/globalassets/nuget-packages/inrule_basic_64_x_64.png</PackageIconUrl>
