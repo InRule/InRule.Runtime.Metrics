@@ -63,13 +63,13 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         [Explicit]
         public void Adhoc_PerformanceTest_Harness()
         {
-            var ruleAppDef = RuleApplicationDef.Load("InvoiceForKpis.ruleappx");
+            var ruleAppDef = RuleApplicationDef.Load("./InRule.Runtime.Metrics.SqlServer.IntegrationTests/InvoiceForKpis.ruleappx");
 
             var entityState = new string[100];
 
             for (var i = 1; i < 101; i++)
             {
-                entityState[i - 1] = File.ReadAllText($"InvoiceJsonFiles\\Invoice{i}.json");
+                entityState[i - 1] = File.ReadAllText($"./InRule.Runtime.Metrics.SqlServer.IntegrationTests/InvoiceJsonFiles\\Invoice{i}.json");
             }
 
             var stopWatch = new Stopwatch();
