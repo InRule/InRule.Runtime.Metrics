@@ -8,7 +8,7 @@
     <Authors>InRule Technology, Inc.</Authors>
     <Company>InRule Technology, Inc.</Company>
     <Description>An InRule® Metric logger for the InRule Rule Engine that can log to Microsoft Azure Table Storage.</Description>
-    <Copyright>Copyright 2022</Copyright>
+    <Copyright>Copyright 2024</Copyright>
     <PackageProjectUrl>http://www.inrule.com</PackageProjectUrl>
     <PackageIconUrl>http://www.inrule.com/globalassets/nuget-packages/inrule_basic_64_x_64.png</PackageIconUrl>
     <PackageTags>InRule irSDK</PackageTags>
@@ -16,8 +16,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="InRule.Runtime" Version="5.8.0" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
+    <PackageReference Include="InRule.Runtime" Version="5.8.1" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
     <PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
   </ItemGroup>
 
