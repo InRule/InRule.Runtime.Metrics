@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("InRule.Runtime.Metrics.TestHarness")]
-[assembly: AssemblyCopyright("Copyright © 2022")]
+[assembly: AssemblyCopyright("Copyright © 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

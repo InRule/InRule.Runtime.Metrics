@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("InRule.Runtime.Metrics.Csv")]
-[assembly: AssemblyCopyright("Copyright © 2022")]
+[assembly: AssemblyCopyright("Copyright © 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
