@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.IO;
 using InRule.Runtime.Engine.State;
 using InRule.Runtime.Metrics.SqlServer.Logging;
 using Microsoft.SqlServer.Management.Common;
 using Microsoft.SqlServer.Management.Smo;
 using DataType = InRule.Repository.DataType;
+using System.Data;
 
 namespace InRule.Runtime.Metrics.SqlServer
 {
@@ -42,7 +42,7 @@ namespace InRule.Runtime.Metrics.SqlServer
 
         private readonly List<(string, Type)> _commonColumns = new List<(string, Type)>
         {
-			("MetricSchemaVersion", typeof(int)),
+            ("MetricSchemaVersion", typeof(int)),
             ("ServiceName", typeof(string)),
             ("RuleApplicationName", typeof(string)),
             ("SessionId", typeof(string)),
@@ -65,7 +65,7 @@ namespace InRule.Runtime.Metrics.SqlServer
         {
             get
             {
-                if(_connection == null || _connection.State == ConnectionState.Closed)
+                if (_connection == null || _connection.State == ConnectionState.Closed)
                 {
                     _connection = new SqlConnection(_connectionString);
                 }
@@ -95,7 +95,7 @@ namespace InRule.Runtime.Metrics.SqlServer
                 var metricSchemaKey = new MetricSchemaKey(ruleApplicationName, tableName, metricSchema);
                 if (_ruleAppEntityToSchemaHashMap.Contains(metricSchemaKey))
                 {
-                    //seen this schema before in this session;
+                    // seen this schema before in this session
                     return;
                 }
 
@@ -133,7 +133,7 @@ namespace InRule.Runtime.Metrics.SqlServer
         {
             if (database.Schemas.Contains(ruleApplicationName))
                 return database.Schemas[ruleApplicationName];
-            
+
             var schema = new Schema(database, ruleApplicationName);
             schema.Create();
 
@@ -157,7 +157,7 @@ namespace InRule.Runtime.Metrics.SqlServer
         {
             if (database.Tables.Contains(tableName, schemaName))
                 return database.Tables[tableName, schemaName];
-            
+
             var table = new Table(database, tableName);
             table.Schema = schemaName;
 
@@ -165,7 +165,7 @@ namespace InRule.Runtime.Metrics.SqlServer
             {
                 var column = new Column(table, columnName, _frameworkTypeToSmoTypeMap[type]);
                 table.Columns.Add(column);
-            } 
+            }
 
             table.Create();
 
@@ -173,8 +173,8 @@ namespace InRule.Runtime.Metrics.SqlServer
         }
 
         private SchemaStatus GetSchemaStatus(string ruleAppName, string entityName, MetricSchema newMetricSchema)
-        {            
-            if(Connection.State != ConnectionState.Open)
+        {
+            if (Connection.State != ConnectionState.Open)
                 Connection.Open();
 
             var selectFromMetricSchema = "SELECT MetricSchema from MetricSchemaStore where RuleAppName = @RuleAppName AND EntityName = @EntityName";
@@ -189,7 +189,7 @@ namespace InRule.Runtime.Metrics.SqlServer
             {
                 return SchemaStatus.New;
             }
-            
+
             var oldSchema = MetricSchema.FromJson(new StringReader(metricJson));
 
             if (oldSchema.GetHashCode() == newMetricSchema.GetHashCode() && oldSchema.Equals(newMetricSchema))
@@ -203,8 +203,8 @@ namespace InRule.Runtime.Metrics.SqlServer
 
         private void SerializeSchemaToDbCache(string ruleAppName, string entityName, string metricJson, SchemaStatus schemaStatus)
         {
-            var storageSql = schemaStatus == SchemaStatus.New 
-                ? "INSERT INTO MetricSchemaStore (RuleAppName, EntityName, MetricSchema) VALUES(@RuleAppName,@EntityName, @MetricSchema)" 
+            var storageSql = schemaStatus == SchemaStatus.New
+                ? "INSERT INTO MetricSchemaStore (RuleAppName, EntityName, MetricSchema) VALUES(@RuleAppName,@EntityName, @MetricSchema)"
                 : "UPDATE MetricSchemaStore SET MetricSchema = @MetricSchema where RuleAppName = @RuleAppName AND EntityName = @EntityName";
 
             var command = Connection.CreateCommand();

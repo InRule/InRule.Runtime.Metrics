@@ -1,19 +1,18 @@
+using InRule.Repository;
+using Microsoft.SqlServer.Management.Common;
+using Microsoft.SqlServer.Management.Smo;
+using NUnit.Framework;
+using NUnit.Framework.Internal;
 using System;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
-using InRule.Repository;
-using InRule.Repository.Classifications;
-using Microsoft.SqlServer.Management.Common;
-using Microsoft.SqlServer.Management.Smo;
-using NUnit.Framework;
-using NUnit.Framework.Internal;
 using DataType = InRule.Repository.DataType;
 
 namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
 {
-	[TestFixture]
+    [TestFixture]
     public sealed class Tests
     {
         private const string ServerConnectionString = "Server=(localdb)\\MSSQLLocalDB;Integrated Security=true";
@@ -24,7 +23,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
 
         private static Table GetTable(RuleApplicationDef ruleAppDef, string name)
         {
-            var sqlConnection = new SqlConnection(ServerConnectionString);
+            var sqlConnection = new Microsoft.Data.SqlClient.SqlConnection(ServerConnectionString);
             var server = new Server(new ServerConnection(sqlConnection));
 
             var database = server.Databases[IntegrationTestDatabaseName];
@@ -36,7 +35,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         [SetUp]
         public void Setup()
         {
-            var sqlConnection = new SqlConnection(ServerConnectionString);
+            var sqlConnection = new Microsoft.Data.SqlClient.SqlConnection(ServerConnectionString);
             var server = new Server(new ServerConnection(sqlConnection));
 
             if (!server.Databases.Contains(IntegrationTestDatabaseName))
@@ -49,7 +48,7 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         [TearDown]
         public void TearDown()
         {
-            var sqlConnection = new SqlConnection(ServerConnectionString);
+            var sqlConnection = new Microsoft.Data.SqlClient.SqlConnection(ServerConnectionString);
             var server = new Server(new ServerConnection(sqlConnection));
 
             if (server.Databases.Contains(IntegrationTestDatabaseName))
@@ -63,13 +62,13 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
         [Explicit]
         public void Adhoc_PerformanceTest_Harness()
         {
-            var ruleAppDef = RuleApplicationDef.Load("InvoiceForKpis.ruleappx");
+            var ruleAppDef = RuleApplicationDef.Load("./InRule.Runtime.Metrics.SqlServer.IntegrationTests/InvoiceForKpis.ruleappx");
 
             var entityState = new string[100];
 
             for (var i = 1; i < 101; i++)
             {
-                entityState[i - 1] = File.ReadAllText($"InvoiceJsonFiles\\Invoice{i}.json");
+                entityState[i - 1] = File.ReadAllText($"./InRule.Runtime.Metrics.SqlServer.IntegrationTests/InvoiceJsonFiles\\Invoice{i}.json");
             }
 
             var stopWatch = new Stopwatch();
@@ -384,88 +383,88 @@ namespace InRule.Runtime.Metrics.SqlServer.IntegrationTests
             }
         }
 
-		[Test]
-		public void ComplexField_CreatesValidTableName()
-		{
-			var ra = new RuleApplicationDef();
-			var e1Def = ra.AddEntity("e1");
-			var cf1Def = e1Def.AddComplexField("cf1");
-			var f1Def = cf1Def.AddCalcField("f1", DataType.Integer, "123");
-			f1Def.IsMetric = true;
+        [Test]
+        public void ComplexField_CreatesValidTableName()
+        {
+            var ra = new RuleApplicationDef();
+            var e1Def = ra.AddEntity("e1");
+            var cf1Def = e1Def.AddComplexField("cf1");
+            var f1Def = cf1Def.AddCalcField("f1", DataType.Integer, "123");
+            f1Def.IsMetric = true;
 
-			var metricLogger = new MetricLogger(DatabaseConnectionString);
+            var metricLogger = new MetricLogger(DatabaseConnectionString);
 
-			using (RuleSession session = new RuleSession(ra))
-			{
-				session.Settings.MetricLogger = metricLogger;
-				session.Settings.MetricServiceName = "Integration Tests";
+            using (RuleSession session = new RuleSession(ra))
+            {
+                session.Settings.MetricLogger = metricLogger;
+                session.Settings.MetricServiceName = "Integration Tests";
 
-				session.CreateEntity(e1Def.Name);
+                session.CreateEntity(e1Def.Name);
 
-				session.ApplyRules();
-			}
+                session.ApplyRules();
+            }
 
-			string expectedTableName = $"{e1Def.Name}/{cf1Def.Name}";
+            string expectedTableName = $"{e1Def.Name}/{cf1Def.Name}";
 
-			var table = GetTable(ra, expectedTableName);
-			Assert.That(table, Is.Not.Null);
-			Assert.That(table.Name, Is.EqualTo(expectedTableName));
+            var table = GetTable(ra, expectedTableName);
+            Assert.That(table, Is.Not.Null);
+            Assert.That(table.Name, Is.EqualTo(expectedTableName));
 
-			using (var connection = new SqlConnection(DatabaseConnectionString))
-			using (var command = new SqlCommand())
-			{
-				var sql = $"SELECT {f1Def.Name}_{f1Def.DataType} FROM [{ra.Name}].[{expectedTableName}]";
-				command.CommandText = sql;
-				command.Connection = connection;
-				connection.Open();
-				var metricValue = command.ExecuteScalar();
+            using (var connection = new SqlConnection(DatabaseConnectionString))
+            using (var command = new SqlCommand())
+            {
+                var sql = $"SELECT {f1Def.Name}_{f1Def.DataType} FROM [{ra.Name}].[{expectedTableName}]";
+                command.CommandText = sql;
+                command.Connection = connection;
+                connection.Open();
+                var metricValue = command.ExecuteScalar();
 
-				Assert.That(metricValue, Is.EqualTo(123));
-			}
-		}
+                Assert.That(metricValue, Is.EqualTo(123));
+            }
+        }
 
-		[Test]
-		public void ComplexCollection_CreatesValidTableName()
-		{
-			var ra = new RuleApplicationDef();
-			var e1Def = ra.AddEntity("e1");
-			var cf1Def = e1Def.AddComplexField("cf1");
-			var cc1Def = cf1Def.AddComplexCollection("cc1");
-			var f1Def = cc1Def.AddCalcField("f1", DataType.Integer, "123");
-			f1Def.IsMetric = true;
+        [Test]
+        public void ComplexCollection_CreatesValidTableName()
+        {
+            var ra = new RuleApplicationDef();
+            var e1Def = ra.AddEntity("e1");
+            var cf1Def = e1Def.AddComplexField("cf1");
+            var cc1Def = cf1Def.AddComplexCollection("cc1");
+            var f1Def = cc1Def.AddCalcField("f1", DataType.Integer, "123");
+            f1Def.IsMetric = true;
 
-			var metricLogger = new MetricLogger(DatabaseConnectionString);
+            var metricLogger = new MetricLogger(DatabaseConnectionString);
 
-			using (RuleSession session = new RuleSession(ra))
-			{
-				session.Settings.MetricLogger = metricLogger;
-				session.Settings.MetricServiceName = "Integration Tests";
+            using (RuleSession session = new RuleSession(ra))
+            {
+                session.Settings.MetricLogger = metricLogger;
+                session.Settings.MetricServiceName = "Integration Tests";
 
-				var e1 = session.CreateEntity(e1Def.Name);
-				var cf1 = e1.Fields[cf1Def.Name];
-				var cc1 = cf1.Collections[cc1Def.Name];
-				cc1.Add();
+                var e1 = session.CreateEntity(e1Def.Name);
+                var cf1 = e1.Fields[cf1Def.Name];
+                var cc1 = cf1.Collections[cc1Def.Name];
+                cc1.Add();
 
-				session.ApplyRules();
-			}
+                session.ApplyRules();
+            }
 
-			string expectedTableName = $"{e1Def.Name}/{cf1Def.Name}/{cc1Def.Name}";
+            string expectedTableName = $"{e1Def.Name}/{cf1Def.Name}/{cc1Def.Name}";
 
-			var table = GetTable(ra, expectedTableName);
-			Assert.That(table, Is.Not.Null);
-			Assert.That(table.Name, Is.EqualTo(expectedTableName));
+            var table = GetTable(ra, expectedTableName);
+            Assert.That(table, Is.Not.Null);
+            Assert.That(table.Name, Is.EqualTo(expectedTableName));
 
-			using (var connection = new SqlConnection(DatabaseConnectionString))
-			using (var command = new SqlCommand())
-			{
-				var sql = $"SELECT {f1Def.Name}_{f1Def.DataType} FROM [{ra.Name}].[{expectedTableName}]";
-				command.CommandText = sql;
-				command.Connection = connection;
-				connection.Open();
-				var metricValue = command.ExecuteScalar();
+            using (var connection = new SqlConnection(DatabaseConnectionString))
+            using (var command = new SqlCommand())
+            {
+                var sql = $"SELECT {f1Def.Name}_{f1Def.DataType} FROM [{ra.Name}].[{expectedTableName}]";
+                command.CommandText = sql;
+                command.Connection = connection;
+                connection.Open();
+                var metricValue = command.ExecuteScalar();
 
-				Assert.That(metricValue, Is.EqualTo(123));
-			}
-		}
-	}
+                Assert.That(metricValue, Is.EqualTo(123));
+            }
+        }
+    }
 }
