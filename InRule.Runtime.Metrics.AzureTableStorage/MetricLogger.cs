@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Threading.Tasks;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Table;
+using Azure.Data.Tables;
 using Newtonsoft.Json.Linq;
 
 namespace InRule.Runtime.Metrics.AzureTableStorage
@@ -12,27 +12,25 @@ namespace InRule.Runtime.Metrics.AzureTableStorage
 		private const string AzureStorageConnectionStringKeyName = "inrule:runtime:metrics:azureTableStorage:connectionString";
 		private const string AzureStorageTableName = "inrule:runtime:metrics:azureTableStorage:tableName";
 
-		private readonly CloudTable _table;
+		private readonly TableClient _tableClient;
 
 		public MetricLogger()
 		{
-			CloudStorageAccount account = CloudStorageAccount.Parse(ConfigurationManager.AppSettings[AzureStorageConnectionStringKeyName]);
-			CloudTableClient tableClient = account.CreateCloudTableClient();
-			_table = tableClient.GetTableReference(ConfigurationManager.AppSettings[AzureStorageTableName]);
+            _tableClient = new TableClient(ConfigurationManager.AppSettings[AzureStorageConnectionStringKeyName], ConfigurationManager.AppSettings[AzureStorageTableName]);
 		}
 
 		public async Task LogMetricsAsync(string serviceName, string ruleApplicationName, Guid sessionId, Metric[] metrics)
         {
             var batch = CreateTableBatchOperation(serviceName, ruleApplicationName, sessionId, metrics);
 
-            await _table.ExecuteBatchAsync(batch);
+            await _tableClient.SubmitTransactionAsync(batch);
         }
 
         public void LogMetrics(string serviceName, string ruleApplicationName, Guid sessionId, Metric[] metrics)
 	    {
             var batch = CreateTableBatchOperation(serviceName, ruleApplicationName, sessionId, metrics);
 
-            _table.ExecuteBatchAsync(batch).GetAwaiter().GetResult();
+			_tableClient.SubmitTransaction(batch);
 	    }
 
 		public static JToken GetMetricJsonValue(object value)
@@ -58,9 +56,10 @@ namespace InRule.Runtime.Metrics.AzureTableStorage
 			}
 		}
 
-        private static TableBatchOperation CreateTableBatchOperation(string serviceName, string ruleApplicationName, Guid sessionId, Metric[] metrics)
+        private static List<TableTransactionAction> CreateTableBatchOperation(string serviceName, string ruleApplicationName, Guid sessionId, Metric[] metrics)
         {
-            var batch = new TableBatchOperation();
+			var addEntitiesBatch = new List<TableTransactionAction>();
+
             foreach (Metric metric in metrics)
             {
                 var jObject = new JObject();
@@ -71,10 +70,13 @@ namespace InRule.Runtime.Metrics.AzureTableStorage
                     jObject.Add(metricProperty.Name, GetMetricJsonValue(value));
                 }
 
-                batch.Add(TableOperation.Insert(new MetricEntity(serviceName, ruleApplicationName, sessionId.ToString(), metric.EntityId.Replace('/', '_'), metric.EntityName, jObject.ToString())));
+                addEntitiesBatch.Add(new TableTransactionAction(
+					TableTransactionActionType.Add,
+					new MetricEntity(serviceName, ruleApplicationName, sessionId.ToString(), metric.EntityId.Replace('/', '_'), metric.EntityName, jObject.ToString()))
+					);
             }
 
-            return batch;
+			return addEntitiesBatch;
         }
     }
 }
